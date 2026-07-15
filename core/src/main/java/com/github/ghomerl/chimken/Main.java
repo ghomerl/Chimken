@@ -1,32 +1,42 @@
 package com.github.ghomerl.chimken;
 
-import com.badlogic.gdx.ApplicationAdapter;
-import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.Game;
 import com.badlogic.gdx.utils.ScreenUtils;
+import com.github.ghomerl.chimken.controller.ScreenManager;
+import com.github.ghomerl.chimken.view.assets.Assets;
+import com.github.ghomerl.chimken.view.screens.MainMenuScreen;
 
-/** {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms. */
-public class Main extends ApplicationAdapter {
-    private SpriteBatch batch;
-    private Texture image;
+public class Main extends Game {
+
+    private boolean assetsLoaded = false;
 
     @Override
     public void create() {
-        batch = new SpriteBatch();
-        image = new Texture("libgdx.png");
+        ScreenManager.init(this);
+        Assets.init();
+        Assets.queueLoad();
+
+        MainMenuScreen mainMenuScreen = new MainMenuScreen();
+        setScreen(mainMenuScreen);
     }
 
     @Override
     public void render() {
-        ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1f);
-        batch.begin();
-        batch.draw(image, 140, 210);
-        batch.end();
+        ScreenUtils.clear(0f, 0f, 0f, 0f);
+        super.render();
+
+
+        if (!assetsLoaded) {
+            if (Assets.update()) {
+                assetsLoaded = true;
+                ScreenManager.setScreen(new MainMenuScreen());
+            }
+        }
     }
 
     @Override
     public void dispose() {
-        batch.dispose();
-        image.dispose();
+        Assets.dispose();
+        super.dispose();
     }
 }
