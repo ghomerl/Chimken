@@ -4,6 +4,7 @@ import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 import com.github.ghomerl.chimken.Main;
 
+
 /** Launches the desktop (LWJGL3) application. */
 public class Lwjgl3Launcher {
     public static void main(String[] args) {
@@ -12,12 +13,24 @@ public class Lwjgl3Launcher {
     }
 
     private static Lwjgl3Application createApplication() {
-        return new Lwjgl3Application(new Main(), getDefaultConfiguration());
+        Lwjgl3ApplicationConfiguration config = new Lwjgl3ApplicationConfiguration();
+
+        config.setFullscreenMode(Lwjgl3ApplicationConfiguration.getDisplayMode());
+        config.setResizable(false);
+        config.useVsync(true);
+
+        // Keep simulating when focus is lost or the window is minimized.
+        // Otherwise a notification / alt-tab / popup stealing focus halts the
+        // whole render+update loop, so the game "freezes" until refocused.
+        config.setPauseWhenLostFocus(false);
+        config.setPauseWhenMinimized(false);
+
+        return new Lwjgl3Application(new Main(), config);
     }
 
     private static Lwjgl3ApplicationConfiguration getDefaultConfiguration() {
         Lwjgl3ApplicationConfiguration configuration = new Lwjgl3ApplicationConfiguration();
-        configuration.setTitle("chimken");
+        configuration.setTitle("Chimcken");
         //// Vsync limits the frames per second to what your hardware can display, and helps eliminate
         //// screen tearing. This setting doesn't always work on Linux, so the line after is a safeguard.
         configuration.useVsync(true);
