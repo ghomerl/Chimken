@@ -76,6 +76,13 @@ public class MainMenuScreen extends AbstractScreen {
             }
         });
 
+        settingsBtn.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                MainMenuController.openSettings();
+            }
+        });
+
         exitBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {

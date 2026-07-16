@@ -6,7 +6,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.github.ghomerl.chimken.controller.AudioManager;
+import com.github.ghomerl.chimken.controller.audio.MusicManager;
 import com.github.ghomerl.chimken.controller.ScreenManager;
 import com.github.ghomerl.chimken.view.assets.Assets;
 
@@ -67,7 +67,7 @@ public class LoadingScreen extends AbstractScreen {
 
 
         if (Assets.update()) {
-            AudioManager.playMainTheme();
+            MusicManager.playMainTheme();
             ScreenManager.setScreen(new MainMenuScreen());
         }
     }
