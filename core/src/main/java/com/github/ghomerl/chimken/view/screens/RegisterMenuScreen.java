@@ -6,10 +6,10 @@ import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.ui.TextField;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
-import com.github.ghomerl.chimken.controller.LoginMenuController;
+import com.github.ghomerl.chimken.controller.RegisterMenuController;
 import com.github.ghomerl.chimken.view.utils.Toast;
 
-public class LoginMenuScreen extends AbstractScreen {
+public class RegisterMenuScreen extends AbstractScreen {
     @Override
     public void show() {
         super.show();
@@ -22,6 +22,8 @@ public class LoginMenuScreen extends AbstractScreen {
         formTable.defaults().width(240f).height(45f);
 
 
+        TextField displayNameField = new TextField("", skin);
+        displayNameField.setMessageText("Display name");
         TextField usernameField = new TextField("", skin);
         usernameField.setMessageText("username");
         TextField passwordField = new TextField("", skin);
@@ -29,49 +31,51 @@ public class LoginMenuScreen extends AbstractScreen {
         passwordField.setPasswordMode(true);
         passwordField.setPasswordCharacter('*');
 
-        TextButton loginBtn = new TextButton("login", skin);
+        TextButton registerBtn = new TextButton("register", skin);
         TextButton backBtn = new TextButton("back", skin);
-        loginBtn.setWidth(60f);
+        registerBtn.setWidth(60f);
         backBtn.setWidth(60f);
 
 
-
+        formTable.add(displayNameField).width(480).colspan(2).padBottom(10).row();
         formTable.add(usernameField).width(480).colspan(2).padBottom(10).row();
         formTable.add(passwordField).width(480).colspan(2).padBottom(20).row();
         formTable.add(backBtn).width(200).padRight(10);
-        formTable.add(loginBtn).width(200);
+        formTable.add(registerBtn).width(200);
 
-        Table registerBtnWrapper = new Table();
-        registerBtnWrapper.top().right().pad(10);
-        TextButton registerBtn = new TextButton("Register", skin);
-        registerBtnWrapper.add(registerBtn).width(240).height(60);
+
+        Table loginBtnWrapper = new Table();
+        loginBtnWrapper.top().right().pad(10);
+        TextButton loginBtn = new TextButton("Login", skin);
+        loginBtnWrapper.add(loginBtn).width(240).height(60);
+
 
         stack.add(formTable);
-        stack.add(registerBtnWrapper);
-
+        stack.add(loginBtnWrapper);
 
         stage.addActor(stack);
 
         backBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                LoginMenuController.openMainMenu();
-            }
-        });
-
-        registerBtn.addListener(new ClickListener() {
-            @Override
-            public void clicked(InputEvent event, float x, float y) {
-                LoginMenuController.openRegisterPage();
+                RegisterMenuController.openMainMenu();
             }
         });
 
         loginBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                String error = LoginMenuController.login(usernameField.getText(), passwordField.getText());
+                RegisterMenuController.openLoginPage();
+            }
+        });
+
+        registerBtn.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                String error = RegisterMenuController.register(
+                    displayNameField.getText(), usernameField.getText(), passwordField.getText());
                 if (error == null) {
-                    LoginMenuController.openMainMenu();
+                    RegisterMenuController.openLoginPage();
                 } else {
                     Toast.show(stage, skin, error);
                 }

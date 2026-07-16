@@ -6,6 +6,8 @@ import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.github.ghomerl.chimken.controller.SettingController;
+import com.github.ghomerl.chimken.controller.AudioSettingController;
+import com.github.ghomerl.chimken.view.utils.Toast;
 
 public class SettingsScreen extends AbstractScreen {
 
@@ -36,6 +38,11 @@ public class SettingsScreen extends AbstractScreen {
         stack.add(settingBtnsWrapper);
 
         stage.addActor(stack);
+
+        String pending = AudioSettingController.getPendingToast();
+        if (pending != null) {
+            Toast.show(stage, skin, pending);
+        }
 
         backBtn.addListener(new ClickListener() {
             @Override

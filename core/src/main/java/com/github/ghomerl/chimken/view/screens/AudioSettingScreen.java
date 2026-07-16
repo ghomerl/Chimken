@@ -58,7 +58,11 @@ public class AudioSettingScreen extends AbstractScreen {
         backBtn.addListener( new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                AudioSettingController.openSettings();
+                AudioSettingController.saveAndGoBack(
+                    (int) masterSlider.getValue(),
+                    (int) musicSlider.getValue(),
+                    (int) sfxSlider.getValue()
+                );
             }
         });
 

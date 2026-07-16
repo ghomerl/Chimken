@@ -9,7 +9,9 @@ import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.github.ghomerl.chimken.controller.ScreenManager;
 import com.github.ghomerl.chimken.controller.MainMenuController;
+import com.github.ghomerl.chimken.controller.LoginMenuController;
 import com.github.ghomerl.chimken.view.assets.Assets;
+import com.github.ghomerl.chimken.view.utils.Toast;
 
 public class MainMenuScreen extends AbstractScreen {
 
@@ -29,8 +31,9 @@ public class MainMenuScreen extends AbstractScreen {
 
         Table loginBtnWrapper = new Table();
         loginBtnWrapper.top().right().pad(10);
-        TextButton loginBtn = new TextButton("Login", skin);
-        loginBtnWrapper.add(loginBtn).width(240).height(60);
+        boolean loggedIn = LoginMenuController.isLoggedIn();
+        TextButton authBtn = new TextButton(loggedIn ? "Logout" : "Login", skin);
+        loginBtnWrapper.add(authBtn).width(240).height(60);
 
         Table playBtnsWrapper = new Table();
         playBtnsWrapper.center().bottom().pad(12);
@@ -53,6 +56,15 @@ public class MainMenuScreen extends AbstractScreen {
         Label titleLabel = new Label("Chimken Invaders", titleStyle);
         titleWrapper.add(titleLabel).row();
 
+        Label.LabelStyle subtitleStyle = new Label.LabelStyle();
+        subtitleStyle.font = Assets.buildFont(48, "Default");
+        subtitleStyle.fontColor = Color.WHITE;
+        String welcomeText = LoginMenuController.isLoggedIn()
+            ? "Welcome " + LoginMenuController.getCurrentUser().getDisplayName()
+            : "You're currently in the guest mode";
+        Label welcomeLabel = new Label(welcomeText, subtitleStyle);
+        titleWrapper.add(welcomeLabel).padTop(20).row();
+
 
         stack.add(titleWrapper);
         stack.add(exitBtnWrapper);
@@ -62,24 +74,39 @@ public class MainMenuScreen extends AbstractScreen {
 
         stage.addActor(stack);
 
-        loginBtn.addListener(new ClickListener() {
-            @Override
-            public void clicked(InputEvent event, float x, float y) {
-                ScreenManager.setScreen(new LoginMenuScreen());
-            }
-        });
+        if (loggedIn) {
+            authBtn.addListener(new ClickListener() {
+                @Override
+                public void clicked(InputEvent event, float x, float y) {
+                    MainMenuController.logout();
+                }
+            });
+        } else {
+            authBtn.addListener(new ClickListener() {
+                @Override
+                public void clicked(InputEvent event, float x, float y) {
+                    MainMenuController.openLoginPage();
+                }
+            });
+        }
 
         playBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                MainMenuController.openPreGameMenu();
+                String error = MainMenuController.openPreGameMenu();
+                if (error != null) {
+                    Toast.show(stage, skin, error);
+                }
             }
         });
 
         settingsBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                MainMenuController.openSettings();
+                String error = MainMenuController.openSettings();
+                if (error != null) {
+                    Toast.show(stage, skin, error);
+                }
             }
         });
 

@@ -10,7 +10,6 @@ import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.utils.viewport.FitViewport;
-import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.github.ghomerl.chimken.view.assets.Assets;
 
@@ -98,10 +97,9 @@ public abstract class AbstractScreen implements Screen {
             stage.dispose();
             stage = null;
         }
+        skin.dispose();
         Gdx.app.log(getClass().getSimpleName(), "dispose()");
     }
-
-    // ──────────────────────── template methods ───────────────────────────
 
 
     protected void update(float delta) {
