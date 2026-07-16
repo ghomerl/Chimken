@@ -1,12 +1,11 @@
 package com.github.ghomerl.chimken.view.screens;
 
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
-import com.badlogic.gdx.scenes.scene2d.ui.Stack;
-import com.badlogic.gdx.scenes.scene2d.ui.Table;
-import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
-import com.badlogic.gdx.scenes.scene2d.ui.TextField;
+import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.github.ghomerl.chimken.controller.RegisterMenuController;
+import com.github.ghomerl.chimken.view.assets.Assets;
 import com.github.ghomerl.chimken.view.utils.Toast;
 
 public class RegisterMenuScreen extends AbstractScreen {
@@ -20,6 +19,14 @@ public class RegisterMenuScreen extends AbstractScreen {
         Table formTable = new Table();
         formTable.defaults().space(12f);
         formTable.defaults().width(240f).height(45f);
+
+        Table titleWrapper = new Table();
+        titleWrapper.center().top().pad(80);
+        Label.LabelStyle titleStyle = new Label.LabelStyle();
+        titleStyle.font = Assets.buildFont(120, "Bold");
+        titleStyle.fontColor = Color.GOLD;
+        Label titleLabel = new Label("Register", titleStyle);
+        titleWrapper.add(titleLabel).row();
 
 
         TextField displayNameField = new TextField("", skin);
@@ -49,7 +56,7 @@ public class RegisterMenuScreen extends AbstractScreen {
         TextButton loginBtn = new TextButton("Login", skin);
         loginBtnWrapper.add(loginBtn).width(240).height(60);
 
-
+        stack.add(titleWrapper);
         stack.add(formTable);
         stack.add(loginBtnWrapper);
 

@@ -1,5 +1,6 @@
 package com.github.ghomerl.chimken.view.screens;
 
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.ui.*;
@@ -9,8 +10,7 @@ import com.github.ghomerl.chimken.controller.AudioSettingController;
 import com.github.ghomerl.chimken.controller.audio.AudioManager;
 import com.github.ghomerl.chimken.controller.audio.MusicManager;
 import com.github.ghomerl.chimken.controller.audio.SfxManager;
-
-
+import com.github.ghomerl.chimken.view.assets.Assets;
 
 
 public class AudioSettingScreen extends AbstractScreen {
@@ -21,6 +21,14 @@ public class AudioSettingScreen extends AbstractScreen {
 
         Stack stack = new Stack();
         stack.setFillParent(true);
+
+        Table titleWrapper = new Table();
+        titleWrapper.center().top().pad(80);
+        Label.LabelStyle titleStyle = new Label.LabelStyle();
+        titleStyle.font = Assets.buildFont(120, "Default");
+        titleStyle.fontColor = Color.GOLD;
+        Label titleLabel = new Label("Audio Settings", titleStyle);
+        titleWrapper.add(titleLabel).row();
 
 
         Table backBtnWrapper = new Table();
@@ -52,6 +60,7 @@ public class AudioSettingScreen extends AbstractScreen {
 
         stack.add(backBtnWrapper);
         stack.add(sliderWrapper);
+        stack.add(titleWrapper);
 
         stage.addActor(stack);
 
