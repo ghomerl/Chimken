@@ -1,6 +1,7 @@
 package com.github.ghomerl.chimken.view.screens;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
@@ -11,12 +12,18 @@ import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.github.ghomerl.chimken.controller.GameScreenController;
 import com.github.ghomerl.chimken.controller.LoginMenuController;
+import com.github.ghomerl.chimken.controller.PlayerController;
 import com.github.ghomerl.chimken.model.KeyBindings;
-import com.github.ghomerl.chimken.model.Player;
+import com.github.ghomerl.chimken.model.entities.Player;
+import com.github.ghomerl.chimken.view.renderers.PlayerRenderer;
+import com.github.ghomerl.chimken.view.renderers.ProjectileRenderer;
 
 public class GameScreen extends AbstractScreen {
 
     private Player player;
+    private PlayerController playerController;
+    private PlayerRenderer playerRenderer;
+    private ProjectileRenderer projectileRenderer;
     private ShapeRenderer shapeRenderer;
 
     @Override
@@ -24,11 +31,29 @@ public class GameScreen extends AbstractScreen {
         super.show();
 
         shapeRenderer = new ShapeRenderer();
+        playerRenderer = new PlayerRenderer();
+        projectileRenderer = new ProjectileRenderer();
+
 
         KeyBindings kb = LoginMenuController.isLoggedIn()
             ? LoginMenuController.getCurrentUser().getKeyBindings()
             : new KeyBindings();
-        player = new Player(kb, 928f, 100f);
+        float startX = worldViewport.getWorldWidth() / 2f - Player.DEFAULT_WIDTH / 2f;
+        player = new Player(kb, startX, 100f);
+
+
+        playerController = new PlayerController(
+            player,
+            worldViewport.getWorldWidth(),
+            worldViewport.getWorldHeight()
+        );
+
+
+        InputMultiplexer multiplexer = (InputMultiplexer) Gdx.input.getInputProcessor();
+        if (multiplexer != null) {
+            multiplexer.addProcessor(0, playerController);
+        }
+
 
         Stack stack = new Stack();
         stack.setFillParent(true);
@@ -39,7 +64,6 @@ public class GameScreen extends AbstractScreen {
         backBtnWrapper.add(backBtn).width(240).height(60);
 
         stack.add(backBtnWrapper);
-
         stage.addActor(stack);
 
         backBtn.addListener(new ClickListener() {
@@ -53,21 +77,29 @@ public class GameScreen extends AbstractScreen {
     @Override
     public void render(float delta) {
         float clamped = Math.min(delta, 1 / 30f);
-        player.update(clamped);
+
+
+        playerController.update(clamped);
+
 
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        worldViewport.apply();
-        batch.setProjectionMatrix(worldCamera.combined);
-        batch.begin();
-        player.render(batch);
-        batch.end();
 
+        worldViewport.apply();
         shapeRenderer.setProjectionMatrix(worldCamera.combined);
+
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        playerRenderer.render(shapeRenderer, player);
+        projectileRenderer.render(shapeRenderer, player.getWeapon().getProjectiles());
+        shapeRenderer.end();
+
+
         shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
         shapeRenderer.setColor(Color.RED);
-        player.renderDebug(shapeRenderer);
+        playerRenderer.renderDebug(shapeRenderer, player);
+        shapeRenderer.setColor(Color.GREEN);
+        projectileRenderer.renderDebug(shapeRenderer, player.getWeapon().getProjectiles());
         shapeRenderer.end();
 
         uiViewport.apply();
