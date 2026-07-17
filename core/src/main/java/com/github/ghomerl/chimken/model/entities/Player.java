@@ -32,6 +32,10 @@ public class Player {
     private int deathCount;
     private int totalPoints;
 
+    private boolean alive = true;
+    private boolean visible = true;
+    private boolean invincible = false;
+
     private final KeyBindings keyBindings;
 
     public Player(KeyBindings keyBindings, float startX, float startY) {
@@ -156,7 +160,33 @@ public class Player {
         this.totalPoints = totalPoints;
     }
 
+    // ── State ───────────────────────────────────────────────────
 
+    public boolean isAlive() {
+        return alive;
+    }
+
+    public void setAlive(boolean alive) {
+        this.alive = alive;
+    }
+
+    public boolean isVisible() {
+        return visible;
+    }
+
+    public void setVisible(boolean visible) {
+        this.visible = visible;
+    }
+
+    public boolean isInvincible() {
+        return invincible;
+    }
+
+    public void setInvincible(boolean invincible) {
+        this.invincible = invincible;
+    }
+
+    // ── Weapon ─────────────────────────────────────────────────────
 
     public Weapon getWeapon() {
         return weapon;
@@ -169,12 +199,13 @@ public class Player {
         this.weapon = weapon;
     }
 
-
+    // ── Key Bindings ───────────────────────────────────────────────
 
     public KeyBindings getKeyBindings() {
         return keyBindings;
     }
 
+    // ── Lifecycle ──────────────────────────────────────────────────
 
     public void dispose() {
         if (weapon != null) {

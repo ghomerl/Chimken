@@ -7,10 +7,20 @@ import com.github.ghomerl.chimken.model.entities.DoubleEggChicken;
 import com.github.ghomerl.chimken.model.entities.Enemy;
 import com.github.ghomerl.chimken.model.entities.SniperChicken;
 
-
+/**
+ * Renders all chicken-type enemies with a simple geometric style:
+ * a body rectangle, a beak triangle, a comb, and an eye.
+ * <p>
+ * Each subtype gets a slightly different accent colour so the player
+ * can tell them apart at a glance.
+ */
 public class ChickenRenderer {
 
-
+    /**
+     * Draws any chicken enemy.
+     * <b>Must be called between</b> {@code shapeRenderer.begin(ShapeType.Filled)}
+     * and {@code shapeRenderer.end()}.
+     */
     public void render(ShapeRenderer renderer, Enemy enemy) {
         if (!enemy.isAlive()) {
             return;
@@ -23,36 +33,40 @@ public class ChickenRenderer {
 
         Color accent = accentFor(enemy);
 
-
-        renderer.setColor(0.95f, 0.85f, 0.55f, 1f);
+        // Body
+        renderer.setColor(0.95f, 0.85f, 0.55f, 1f);  // warm tan
         renderer.rect(x, y, w, h);
 
-
+        // Inner body highlight
         renderer.setColor(1f, 0.93f, 0.7f, 1f);
         renderer.rect(x + 6, y + 6, w - 12, h - 12);
 
-
+        // Comb (red, top centre)
         renderer.setColor(Color.RED);
         float combW = w * 0.25f;
         float combH = 10f;
         renderer.rect(x + w * 0.5f - combW / 2f, y + h - 2f, combW, combH);
 
-
+        // Beak (orange triangle, bottom-centre)
         renderer.setColor(accent);
         renderer.triangle(
-            x + w * 0.5f, y - 6f,
-            x + w * 0.38f, y + 6f,
-            x + w * 0.62f, y + 6f
+            x + w * 0.5f, y - 6f,           // beak tip
+            x + w * 0.38f, y + 6f,           // left base
+            x + w * 0.62f, y + 6f            // right base
         );
 
-
+        // Eye
         renderer.setColor(Color.BLACK);
         renderer.circle(x + w * 0.35f, y + h * 0.7f, 4f);
         renderer.setColor(Color.WHITE);
         renderer.circle(x + w * 0.35f, y + h * 0.7f, 2f);
     }
 
-
+    /**
+     * Debug hitbox outline.
+     * <b>Must be called between</b> {@code shapeRenderer.begin(ShapeType.Line)}
+     * and {@code shapeRenderer.end()}.
+     */
     public void renderDebug(ShapeRenderer renderer, Enemy enemy) {
         if (enemy.isAlive()) {
             renderer.rect(enemy.getX(), enemy.getY(),
