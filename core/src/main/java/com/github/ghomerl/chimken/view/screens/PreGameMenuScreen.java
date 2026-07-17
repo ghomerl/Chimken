@@ -1,14 +1,12 @@
 package com.github.ghomerl.chimken.view.screens;
 
-import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
-import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Stack;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
+import com.github.ghomerl.chimken.controller.PreGameMenuController;
 import com.github.ghomerl.chimken.controller.ScreenManager;
-import com.github.ghomerl.chimken.view.assets.Assets;
 
 public class PreGameMenuScreen extends AbstractScreen {
     @Override
@@ -18,26 +16,27 @@ public class PreGameMenuScreen extends AbstractScreen {
         Stack stack = new Stack();
         stack.setFillParent(true);
 
-        Table titleWrapper = new Table();
-        titleWrapper.center().top().pad(80);
-        Label.LabelStyle titleStyle = new Label.LabelStyle();
-        titleStyle.font = Assets.buildFont(120, "Bold");
-        titleStyle.fontColor = Color.GOLD;
-        Label titleLabel = new Label("Save the world", titleStyle);
-        titleWrapper.add(titleLabel).row();
-
         Table backBtnWrapper = new Table();
         backBtnWrapper.defaults().width(120);
         backBtnWrapper.top().left().pad(10f);
         TextButton backBtn = new TextButton("back", skin);
         backBtnWrapper.add(backBtn);
 
+        Table menuBtnsWrapper = new Table();
+        menuBtnsWrapper.center().center().pad(12);
+        menuBtnsWrapper.defaults().width(480).height(80);
+        menuBtnsWrapper.defaults().pad(12);
+        TextButton newGameBtn = new TextButton("New Game", skin);
+        TextButton achievementsBtn = new TextButton("Achievements", skin);
+        TextButton shopBtn = new TextButton("Shop", skin);
+        menuBtnsWrapper.add(newGameBtn).row();
+        menuBtnsWrapper.add(achievementsBtn).row();
+        menuBtnsWrapper.add(shopBtn).row();
 
 
 
-
-        stack.add(titleWrapper);
         stack.add(backBtnWrapper);
+        stack.add(menuBtnsWrapper);
 
 
         stage.addActor(stack);
@@ -45,7 +44,14 @@ public class PreGameMenuScreen extends AbstractScreen {
         backBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                ScreenManager.setScreen(new MainMenuScreen());
+                PreGameMenuController.openMainMenu();
+            }
+        });
+
+        newGameBtn.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                PreGameMenuController.startNewGame();
             }
         });
     }
