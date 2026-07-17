@@ -1,6 +1,7 @@
 package com.github.ghomerl.chimken.model.entities;
 
 import com.badlogic.gdx.math.Rectangle;
+import com.github.ghomerl.chimken.model.entities.weapons.Weapon;
 
 
 public class Enemy {
@@ -15,6 +16,7 @@ public class Enemy {
     private int damage;
     private boolean alive;
     private int points;
+    private Weapon weapon;
 
     public Enemy(float x, float y, float width, float height,
                  float speed, int hp, int damage, int points) {
@@ -29,6 +31,7 @@ public class Enemy {
         this.points = points;
         this.alive = true;
     }
+
 
 
     public float getX() {
@@ -110,6 +113,19 @@ public class Enemy {
     }
 
 
+
+    public Weapon getWeapon() {
+        return weapon;
+    }
+
+    public void setWeapon(Weapon weapon) {
+        if (this.weapon != null) {
+            this.weapon.dispose();
+        }
+        this.weapon = weapon;
+    }
+
+
     public boolean isAlive() {
         return alive;
     }
@@ -118,11 +134,19 @@ public class Enemy {
         this.alive = alive;
     }
 
+
     public void takeDamage(int amount) {
         hp -= amount;
         if (hp <= 0) {
             hp = 0;
             alive = false;
+        }
+    }
+
+
+    public void dispose() {
+        if (weapon != null) {
+            weapon.dispose();
         }
     }
 }
