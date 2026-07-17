@@ -44,5 +44,22 @@ public class MusicManager {
         }
     }
 
+    public static void playBattleTheme() {
+        Music theme = Assets.battleTheme;
+        if (theme != null) {
+            if (!theme.isPlaying()) {
+                theme.setLooping(true);
+                theme.setVolume(AudioManager.masterVolume * musicVolume / 10000f);
+                theme.play();
+            }
+        }
+    }
+
+    public static void stopBattleTheme() {
+        Music theme = Assets.battleTheme;
+        if (theme != null && theme.isPlaying()) {
+            theme.stop();
+        }
+    }
 
 }

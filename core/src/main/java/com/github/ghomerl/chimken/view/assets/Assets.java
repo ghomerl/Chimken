@@ -15,6 +15,7 @@ public class Assets {
     public static final String UI_SKIN = "ui/skin/main/quantum-horizon-ui.json";
     public static final String SECONDARY_UI_SKIN = "ui/skin/secondary/pixthulhu-ui.json";
     public static final String MAIN_SOUNDTRACK = "audio/Main Theme.mp3";
+    public static final String BATTLE_SOUNDTRACK = "audio/Battle Theme.mp3";
     public static final String RETRO_FONT = "fonts/RetroSigned-DYYY0.ttf";
     public static final String TRAJAN_FONT = "fonts/TrajanPro-Regular.ttf";
     public static final String PERPETUA_FONT = "fonts/Perpetua-Regular.otf";
@@ -29,6 +30,7 @@ public class Assets {
     public static Skin skin;
     public static Skin secondSkin;
     public static Music mainTheme;
+    public static Music battleTheme;
 
     public static void init() {
         manager = new AssetManager();
@@ -37,8 +39,8 @@ public class Assets {
 
     public static void queueLoad() {
         manager.load(UI_SKIN, Skin.class);
-        manager.load(SECONDARY_UI_SKIN, Skin.class);
         manager.load(MAIN_SOUNDTRACK, Music.class);
+        manager.load(SECONDARY_UI_SKIN, Skin.class);
     }
 
     public static boolean update() {
@@ -82,6 +84,25 @@ public class Assets {
         BitmapFont font = generator.generateFont(param);
         generator.dispose();
         return font;
+    }
+
+    public static void queueGameAssets() {
+        manager.load(BATTLE_SOUNDTRACK, Music.class);
+    }
+
+
+    public static boolean updateGameAssets() {
+        if (!manager.update()) {
+            return false;
+        }
+        if (battleTheme == null && manager.isLoaded(BATTLE_SOUNDTRACK)) {
+            battleTheme = manager.get(BATTLE_SOUNDTRACK, Music.class);
+        }
+        return true;
+    }
+
+    public static float getGameProgress() {
+        return manager.getProgress();
     }
 
     public static void dispose() {
