@@ -12,7 +12,8 @@ import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 public class Assets {
     public static AssetManager manager;
 
-    public static final String UI_SKIN = "ui/skin/quantum-horizon-ui.json";
+    public static final String UI_SKIN = "ui/skin/main/quantum-horizon-ui.json";
+    public static final String SECONDARY_UI_SKIN = "ui/skin/secondary/pixthulhu-ui.json";
     public static final String MAIN_SOUNDTRACK = "audio/Main Theme.mp3";
     public static final String RETRO_FONT = "fonts/RetroSigned-DYYY0.ttf";
     public static final String TRAJAN_FONT = "fonts/TrajanPro-Regular.ttf";
@@ -26,6 +27,7 @@ public class Assets {
 
 
     public static Skin skin;
+    public static Skin secondSkin;
     public static Music mainTheme;
 
     public static void init() {
@@ -35,6 +37,7 @@ public class Assets {
 
     public static void queueLoad() {
         manager.load(UI_SKIN, Skin.class);
+        manager.load(SECONDARY_UI_SKIN, Skin.class);
         manager.load(MAIN_SOUNDTRACK, Music.class);
     }
 
@@ -45,6 +48,9 @@ public class Assets {
             }
             if (mainTheme == null) {
                 mainTheme = manager.get(MAIN_SOUNDTRACK, Music.class);
+            }
+            if (secondSkin == null) {
+                secondSkin = manager.get(SECONDARY_UI_SKIN, Skin.class);
             }
             return true;
         }

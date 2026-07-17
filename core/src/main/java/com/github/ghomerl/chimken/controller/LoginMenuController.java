@@ -5,6 +5,7 @@ import com.github.ghomerl.chimken.controller.audio.MusicManager;
 import com.github.ghomerl.chimken.controller.audio.SfxManager;
 import com.github.ghomerl.chimken.model.dao.UserDAO;
 import com.github.ghomerl.chimken.model.User;
+import com.github.ghomerl.chimken.model.utils.RememberMeManager;
 import com.github.ghomerl.chimken.view.screens.MainMenuScreen;
 import com.github.ghomerl.chimken.view.screens.RegisterMenuScreen;
 
@@ -58,5 +59,22 @@ public class LoginMenuController {
 
     public static void logout() {
         currentUser = null;
+        RememberMeManager.clearCredentials();
+    }
+
+
+    public static boolean autoLogin() {
+        String username = RememberMeManager.getRememberedUsername();
+        String password = RememberMeManager.getRememberedPassword();
+        if (username == null || password == null) {
+            return false;
+        }
+        String error = login(username, password);
+        if (error == null) {
+            return true;
+        }
+
+        RememberMeManager.clearCredentials();
+        return false;
     }
 }

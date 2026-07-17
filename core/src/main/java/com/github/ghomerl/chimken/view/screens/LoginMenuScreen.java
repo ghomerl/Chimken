@@ -5,6 +5,7 @@ import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.github.ghomerl.chimken.controller.LoginMenuController;
+import com.github.ghomerl.chimken.model.utils.RememberMeManager;
 import com.github.ghomerl.chimken.view.assets.Assets;
 import com.github.ghomerl.chimken.view.utils.Toast;
 
@@ -36,6 +37,9 @@ public class LoginMenuScreen extends AbstractScreen {
         passwordField.setPasswordMode(true);
         passwordField.setPasswordCharacter('*');
 
+        CheckBox rememberMeCheckbox = new CheckBox("Remember Me",Assets.secondSkin);
+
+
         TextButton loginBtn = new TextButton("login", skin);
         TextButton backBtn = new TextButton("back", skin);
         loginBtn.setWidth(60f);
@@ -44,7 +48,8 @@ public class LoginMenuScreen extends AbstractScreen {
 
 
         formTable.add(usernameField).width(480).colspan(2).padBottom(10).row();
-        formTable.add(passwordField).width(480).colspan(2).padBottom(20).row();
+        formTable.add(passwordField).width(480).colspan(2).padBottom(8).row();
+        formTable.add(rememberMeCheckbox).center().width(480).colspan(2).padBottom(20).row();
         formTable.add(backBtn).width(200).padRight(10);
         formTable.add(loginBtn).width(200);
 
@@ -79,6 +84,14 @@ public class LoginMenuScreen extends AbstractScreen {
             public void clicked(InputEvent event, float x, float y) {
                 String error = LoginMenuController.login(usernameField.getText(), passwordField.getText());
                 if (error == null) {
+                    if (rememberMeCheckbox.isChecked()) {
+                        RememberMeManager.saveCredentials(
+                            usernameField.getText().trim(),
+                            passwordField.getText()
+                        );
+                    } else {
+                        RememberMeManager.clearCredentials();
+                    }
                     LoginMenuController.openMainMenu();
                 } else {
                     Toast.show(stage, skin, error);
