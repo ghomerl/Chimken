@@ -4,12 +4,17 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.Pixmap;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
+import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Stack;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
+import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Array;
 import com.github.ghomerl.chimken.controller.*;
 import com.github.ghomerl.chimken.controller.audio.MusicManager;
@@ -20,6 +25,7 @@ import com.github.ghomerl.chimken.model.entities.Enemy;
 import com.github.ghomerl.chimken.model.entities.Player;
 import com.github.ghomerl.chimken.model.entities.SniperChicken;
 import com.github.ghomerl.chimken.model.entities.projectiles.Projectile;
+import com.github.ghomerl.chimken.view.assets.Assets;
 import com.github.ghomerl.chimken.view.renderers.ChickenRenderer;
 import com.github.ghomerl.chimken.view.renderers.EggProjectileRenderer;
 import com.github.ghomerl.chimken.view.renderers.PlayerRenderer;
@@ -47,13 +53,59 @@ public class GameScreen extends AbstractScreen {
     private ChickenRenderer chickenRenderer;
     private EggProjectileRenderer eggProjectileRenderer;
 
+    // ── Pause ─────────────────────────────────────────────────────
+    private PauseController pauseController;
+    private Table pauseOverlay;
+    private Texture dimBgTexture;
+    private Texture panelBgTexture;
+
     // ── Shared ────────────────────────────────────────────────────
     private ShapeRenderer shapeRenderer;
 
+    // ── Re-entry guard ────────────────────────────────────────────
+    private boolean initialized = false;
+
+    // ══════════════════════════════════════════════════════════════
+    //  Lifecycle
+    // ══════════════════════════════════════════════════════════════
+
     @Override
     public void show() {
-        super.show();
+        if (!initialized) {
+            // First entry: let AbstractScreen create cameras, viewports,
+            // stage, skin, and the input multiplexer.
+            super.show();
+            initGame();
+            initialized = true;
+        } else {
+            // Re-entry (e.g. returning from Settings while paused).
+            // Do NOT call super.show() — it would create NEW viewport/
+            // camera objects that are disconnected from the stage's
+            // internal viewport, causing all UI to vanish.
+            // Instead just update the existing viewports and rebuild
+            // the input multiplexer.
+            worldViewport.update(Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), true);
+            stage.getViewport().update(Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), true);
 
+            InputMultiplexer multiplexer = new InputMultiplexer();
+            multiplexer.addProcessor(stage);
+            Gdx.input.setInputProcessor(multiplexer);
+        }
+
+        reAddInputProcessors();
+
+        // When returning from Settings while still paused, make sure the
+        // overlay is visible again.
+        if (pauseController != null && pauseController.isPaused()) {
+            pauseOverlay.setVisible(true);
+        }
+    }
+
+    /**
+     * One-time setup: renderers, player, enemies, UI, pause overlay.
+     * Only called on the first {@link #show()}.
+     */
+    private void initGame() {
         shapeRenderer = new ShapeRenderer();
 
         // ── Renderers ──────────────────────────────────────────────
@@ -75,11 +127,8 @@ public class GameScreen extends AbstractScreen {
             worldViewport.getWorldHeight()
         );
 
-        // Insert the game input processor at the front of the multiplexer
-        InputMultiplexer multiplexer = (InputMultiplexer) Gdx.input.getInputProcessor();
-        if (multiplexer != null) {
-            multiplexer.addProcessor(0, playerController);
-        }
+        // ── Pause controller ──────────────────────────────────────
+        pauseController = new PauseController();
 
         // ── Enemies (one of each kind) ─────────────────────────────
         float ww = worldViewport.getWorldWidth();
@@ -112,17 +161,157 @@ public class GameScreen extends AbstractScreen {
                 GameScreenController.openPreGameMenu();
             }
         });
+
+        // ── UI: pause overlay ──────────────────────────────────────
+        createPauseOverlay();
     }
+
+    /**
+     * Adds the {@link PauseController} and {@link PlayerController}
+     * to the front of the current InputMultiplexer.
+     * <p>
+     * Order: pauseController (index 0, catches ESC first) →
+     *        playerController (index 1, movement + shooting) →
+     *        stage (last, handles UI clicks)
+     */
+    private void reAddInputProcessors() {
+        InputMultiplexer multiplexer = (InputMultiplexer) Gdx.input.getInputProcessor();
+        if (multiplexer != null) {
+            multiplexer.addProcessor(0, pauseController);
+            multiplexer.addProcessor(1, playerController);
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    //  Pause overlay
+    // ══════════════════════════════════════════════════════════════
+
+    private void createPauseOverlay() {
+        // ── 1-pixel textures used as tiled backgrounds ─────────────
+        Pixmap dimPx = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
+        dimPx.setColor(0, 0, 0, 0.5f);
+        dimPx.fill();
+        dimBgTexture = new Texture(dimPx);
+        dimPx.dispose();
+
+        Pixmap panelPx = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
+        panelPx.setColor(0.1f, 0.1f, 0.15f, 0.85f);
+        panelPx.fill();
+        panelBgTexture = new Texture(panelPx);
+        panelPx.dispose();
+
+        // ── Full-screen dim layer ──────────────────────────────────
+        pauseOverlay = new Table();
+        pauseOverlay.setFillParent(true);
+        pauseOverlay.setBackground(new TextureRegionDrawable(new TextureRegion(dimBgTexture)));
+
+        // ── Centred 640 × 360 panel ───────────────────────────────
+        Table panel = new Table();
+        panel.setBackground(new TextureRegionDrawable(new TextureRegion(panelBgTexture)));
+
+        Label.LabelStyle titleStyle = new Label.LabelStyle();
+        titleStyle.font = Assets.buildFont(72, "Bold");
+        titleStyle.fontColor = Color.WHITE;
+        Label titleLabel = new Label("PAUSED", titleStyle);
+
+        TextButton resumeBtn = new TextButton("Resume Game", skin);
+        TextButton settingsBtn = new TextButton("Settings", skin);
+        TextButton quitBtn = new TextButton("Quit Game", skin);
+
+        panel.add(titleLabel).padBottom(30f).row();
+        panel.add(resumeBtn).width(400).height(60).pad(8f).row();
+        panel.add(settingsBtn).width(400).height(60).pad(8f).row();
+        panel.add(quitBtn).width(400).height(60).pad(8f);
+
+        pauseOverlay.add(panel).width(640).height(360);
+
+        pauseOverlay.setVisible(false);
+        stage.addActor(pauseOverlay);
+
+        // ── Button listeners ───────────────────────────────────────
+        resumeBtn.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                pauseController.resume();
+                pauseOverlay.setVisible(false);
+            }
+        });
+
+        settingsBtn.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                pauseOverlay.setVisible(false);
+                GameScreenController.openSettingsFromPause(GameScreen.this);
+            }
+        });
+
+        quitBtn.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                pauseController.resume();
+                pauseOverlay.setVisible(false);
+                GameScreenController.openPreGameMenu();
+            }
+        });
+    }
+
+    /**
+     * Called by {@link GameScreenController#returnToPausedGame()} to
+     * restore the paused state after returning from the Settings screen.
+     */
+    public void setPaused(boolean paused) {
+        if (pauseController != null) {
+            pauseController.setPaused(paused);
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    //  Render
+    // ══════════════════════════════════════════════════════════════
 
     @Override
     public void render(float delta) {
         float clamped = Math.min(delta, 1 / 30f);
 
+        // Keep the overlay visibility in sync with the controller state
+        // (covers both ESC-toggle and button-toggle paths).
+        if (pauseOverlay != null) {
+            pauseOverlay.setVisible(pauseController.isPaused());
+        }
+
+        if (pauseController.isPaused()) {
+            renderPausedFrame(clamped);
+            return;
+        }
+
+        renderGameFrame(clamped);
+    }
+
+    /**
+     * Draws the frozen game world (no updates) plus the pause overlay.
+     */
+    private void renderPausedFrame(float delta) {
+        Gdx.gl.glClearColor(0, 0, 0, 1);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+
+        drawWorldFilled();
+        drawWorldDebug();
+
+        // UI pass — draws the pause overlay on top
+        uiViewport.apply();
+        stage.act(delta);
+        stage.draw();
+    }
+
+    /**
+     * Full game frame: update → collisions → death check → draw.
+     */
+    private void renderGameFrame(float delta) {
         // ── Update ─────────────────────────────────────────────────
-        playerController.update(clamped);
-        chickenController.update(clamped);
-        doubleEggChickenController.update(clamped);
-        sniperChickenController.update(clamped);
+        playerController.update(delta);
+        chickenController.update(delta);
+        doubleEggChickenController.update(delta);
+        sniperChickenController.update(delta);
 
         // ── Collision detection ────────────────────────────────────
         if (!playerController.isPlayerDead()) {
@@ -133,85 +322,82 @@ public class GameScreen extends AbstractScreen {
         if (playerController.isPlayerDead()) {
             MusicManager.stopBattleTheme();
             ScreenManager.setScreen(new GameOverScreen(player.getTotalPoints()));
-            return; // next frame the new screen takes over
+            return;
         }
 
-        // ── Clear ──────────────────────────────────────────────────
+        // ── Draw ───────────────────────────────────────────────────
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        // ── World pass: filled shapes ──────────────────────────────
+        drawWorldFilled();
+        drawWorldDebug();
+
+        // UI pass
+        uiViewport.apply();
+        stage.act(delta);
+        stage.draw();
+    }
+
+    // ── World drawing helpers ──────────────────────────────────────
+
+    private void drawWorldFilled() {
         worldViewport.apply();
         shapeRenderer.setProjectionMatrix(worldCamera.combined);
 
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
 
-        // Player + plasma projectiles
         playerRenderer.render(shapeRenderer, player);
         projectileRenderer.render(shapeRenderer, player.getWeapon().getProjectiles());
 
-        // Enemies
         for (Enemy e : enemies) {
-            chickenRenderer.render(shapeRenderer, e);
+            if (e.isAlive()) chickenRenderer.render(shapeRenderer, e);
         }
 
-        // Enemy egg projectiles
         for (Enemy e : enemies) {
-            eggProjectileRenderer.render(shapeRenderer, e.getWeapon().getProjectiles());
+            if (e.isAlive()) eggProjectileRenderer.render(shapeRenderer, e.getWeapon().getProjectiles());
         }
 
         shapeRenderer.end();
+    }
 
-        // ── World pass: debug hitboxes ─────────────────────────────
+    private void drawWorldDebug() {
         shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
 
-        // Player
         shapeRenderer.setColor(Color.RED);
         playerRenderer.renderDebug(shapeRenderer, player);
+
         shapeRenderer.setColor(Color.GREEN);
         projectileRenderer.renderDebug(shapeRenderer, player.getWeapon().getProjectiles());
 
-        // Enemies
         shapeRenderer.setColor(Color.YELLOW);
         for (Enemy e : enemies) {
-            chickenRenderer.renderDebug(shapeRenderer, e);
+            if (e.isAlive()) chickenRenderer.renderDebug(shapeRenderer, e);
         }
 
-        // Enemy projectiles
         shapeRenderer.setColor(Color.ORANGE);
         for (Enemy e : enemies) {
-            eggProjectileRenderer.renderDebug(shapeRenderer, e.getWeapon().getProjectiles());
+            if (e.isAlive()) eggProjectileRenderer.renderDebug(shapeRenderer, e.getWeapon().getProjectiles());
         }
 
         shapeRenderer.end();
-
-        // ── UI pass ────────────────────────────────────────────────
-        uiViewport.apply();
-        stage.act(clamped);
-        stage.draw();
     }
 
-    // ── Collision resolution ───────────────────────────────────────
+    // ══════════════════════════════════════════════════════════════
+    //  Collision resolution
+    // ══════════════════════════════════════════════════════════════
 
-    /**
-     * Runs all three collision types each frame:
-     * <ol>
-     *   <li>Player body ↔ Enemy body</li>
-     *   <li>Enemy egg projectile ↔ Player body</li>
-     *   <li>Player plasma projectile ↔ Enemy body</li>
-     * </ol>
-     */
     private void resolveCollisions() {
         // 1) Player body ↔ Enemy body (enemy dies, player loses 1 HP, rise respawn)
         for (Enemy e : enemies) {
             if (CollisionController.checkPlayerEnemyCollision(player, e)) {
                 playerController.onPlayerHit(PlayerController.RESPAWN_RISE);
                 e.takeDamage(e.getHp()); // instant kill
-                break; // one body collision per frame
+                awardKillPoints(e);
+                break;
             }
         }
 
-        // 2) Enemy egg projectile ↔ Player (egg disappears, player loses 1 HP, teleport respawn)
+        // 2) Enemy egg projectile ↔ Player (egg disappears, player -1 HP, teleport respawn)
         if (CollisionController.canPlayerCollide(player)) {
             boolean playerWasHit = false;
             for (Enemy e : enemies) {
@@ -238,11 +424,27 @@ public class GameScreen extends AbstractScreen {
                 if (CollisionController.checkProjectileEnemyCollision(p, e)) {
                     p.setActive(false);
                     e.takeDamage(p.getDamage());
-                    break; // bolt hit one enemy
+                    if (!e.isAlive()) {
+                        awardKillPoints(e);
+                    }
+                    break;
                 }
             }
         }
     }
+
+    /**
+     * Adds the enemy's point value to the player's score and
+     * increments the kill counter.
+     */
+    private void awardKillPoints(Enemy enemy) {
+        player.setTotalPoints(player.getTotalPoints() + enemy.getPoints());
+        player.setKillCount(player.getKillCount() + 1);
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    //  Screen lifecycle
+    // ══════════════════════════════════════════════════════════════
 
     @Override
     public void resize(int width, int height) {
@@ -265,6 +467,12 @@ public class GameScreen extends AbstractScreen {
         }
         if (shapeRenderer != null) {
             shapeRenderer.dispose();
+        }
+        if (dimBgTexture != null) {
+            dimBgTexture.dispose();
+        }
+        if (panelBgTexture != null) {
+            panelBgTexture.dispose();
         }
         super.dispose();
     }
