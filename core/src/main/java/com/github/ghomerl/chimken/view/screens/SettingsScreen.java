@@ -7,6 +7,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.Stack;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
+import com.github.ghomerl.chimken.controller.GameScreenController;
 import com.github.ghomerl.chimken.controller.SettingController;
 import com.github.ghomerl.chimken.controller.AudioSettingController;
 import com.github.ghomerl.chimken.view.assets.Assets;
@@ -58,7 +59,11 @@ public class SettingsScreen extends AbstractScreen {
         backBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                SettingController.openMainMenu();
+                if (GameScreenController.isNavigatingFromPause()) {
+                    GameScreenController.returnToPausedGame();
+                } else {
+                    SettingController.openMainMenu();
+                }
             }
         });
 

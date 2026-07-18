@@ -9,6 +9,8 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 
+import static com.github.ghomerl.chimken.controller.audio.MusicManager.musicList;
+
 public class Assets {
     public static AssetManager manager;
 
@@ -50,6 +52,7 @@ public class Assets {
             }
             if (mainTheme == null) {
                 mainTheme = manager.get(MAIN_SOUNDTRACK, Music.class);
+                musicList.add(mainTheme);
             }
             if (secondSkin == null) {
                 secondSkin = manager.get(SECONDARY_UI_SKIN, Skin.class);
@@ -97,6 +100,7 @@ public class Assets {
         }
         if (battleTheme == null && manager.isLoaded(BATTLE_SOUNDTRACK)) {
             battleTheme = manager.get(BATTLE_SOUNDTRACK, Music.class);
+            musicList.add(battleTheme);
         }
         return true;
     }

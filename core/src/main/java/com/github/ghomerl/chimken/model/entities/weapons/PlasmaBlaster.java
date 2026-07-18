@@ -8,8 +8,8 @@ import com.github.ghomerl.chimken.model.entities.projectiles.PlasmaLaserProjecti
  */
 public class PlasmaBlaster extends Weapon {
 
-    /** Four shots per second. */
-    private static final float FIRE_RATE = 0.25f;
+    /** Ten shots per second. */
+    private static final float FIRE_RATE = 0.1f;
 
     public PlasmaBlaster() {
         super(FIRE_RATE);

@@ -8,16 +8,10 @@ public class PlasmaLaserProjectile extends Projectile {
 
     private static final float WIDTH = 8f;
     private static final float HEIGHT = 24f;
-    private static final float SPEED = 600f;
+    private static final float SPEED = 1200f;
     private static final int DAMAGE = 1;
 
-    /**
-     * Creates a new plasma laser projectile.
-     *
-     * @param x          left-edge x position (the caller should centre it on the source)
-     * @param y          bottom-edge y position
-     * @param directionY positive for upward, negative for downward
-     */
+
     public PlasmaLaserProjectile(float x, float y, float directionY) {
         super(x, y, WIDTH, HEIGHT, SPEED, DAMAGE, directionY);
     }

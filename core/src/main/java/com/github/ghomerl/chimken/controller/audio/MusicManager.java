@@ -3,6 +3,9 @@ package com.github.ghomerl.chimken.controller.audio;
 import com.badlogic.gdx.audio.Music;
 import com.github.ghomerl.chimken.view.assets.Assets;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class MusicManager {
 
     private static float musicVolume = 100;
@@ -11,12 +14,16 @@ public class MusicManager {
         return musicVolume;
     }
 
+    public static List<Music> musicList = new ArrayList<>();
+
     public static void setMusicVolume(float musicVolume) {
         MusicManager.musicVolume = musicVolume;
     }
 
     public static void updateMusicVolume() {
-        Assets.mainTheme.setVolume(AudioManager.masterVolume * musicVolume / 10000f);
+        for (Music m : musicList) {
+            m.setVolume(AudioManager.masterVolume * musicVolume / 10000f);
+        }
     }
 
     public static void playMainTheme() {
