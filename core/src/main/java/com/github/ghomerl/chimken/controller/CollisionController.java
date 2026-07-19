@@ -1,6 +1,6 @@
 package com.github.ghomerl.chimken.controller;
 
-import com.github.ghomerl.chimken.model.entities.Enemy;
+import com.github.ghomerl.chimken.model.entities.enemies.Enemy;
 import com.github.ghomerl.chimken.model.entities.Player;
 import com.github.ghomerl.chimken.model.entities.projectiles.Projectile;
 

@@ -2,10 +2,9 @@ package com.github.ghomerl.chimken.view.renderers;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.github.ghomerl.chimken.model.entities.ChickenEnemy;
-import com.github.ghomerl.chimken.model.entities.DoubleEggChicken;
-import com.github.ghomerl.chimken.model.entities.Enemy;
-import com.github.ghomerl.chimken.model.entities.SniperChicken;
+import com.github.ghomerl.chimken.model.entities.enemies.DoubleEggChicken;
+import com.github.ghomerl.chimken.model.entities.enemies.Enemy;
+import com.github.ghomerl.chimken.model.entities.enemies.SniperChicken;
 
 /**
  * Renders all chicken-type enemies with a simple geometric style:

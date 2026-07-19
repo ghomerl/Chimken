@@ -1,7 +1,7 @@
 package com.github.ghomerl.chimken.controller;
 
 import com.github.ghomerl.chimken.model.entities.Player;
-import com.github.ghomerl.chimken.model.entities.SniperChicken;
+import com.github.ghomerl.chimken.model.entities.enemies.SniperChicken;
 
 import java.util.Random;
 

@@ -1,6 +1,6 @@
 package com.github.ghomerl.chimken.controller;
 
-import com.github.ghomerl.chimken.model.entities.ChickenEnemy;
+import com.github.ghomerl.chimken.model.entities.enemies.ChickenEnemy;
 
 import java.util.Random;
 

@@ -2,6 +2,7 @@ package com.github.ghomerl.chimken.model.entities;
 
 import com.badlogic.gdx.math.Rectangle;
 import com.github.ghomerl.chimken.model.KeyBindings;
+import com.github.ghomerl.chimken.model.entities.weapons.BoronRailgun;
 import com.github.ghomerl.chimken.model.entities.weapons.PlasmaBlaster;
 import com.github.ghomerl.chimken.model.entities.weapons.Weapon;
 
@@ -48,7 +49,7 @@ public class Player {
 
         this.hp = 5;
         this.missileCount = 0;
-        this.weapon = new PlasmaBlaster();
+        this.weapon = new BoronRailgun();
         this.keysObtained = 0;
         this.foodObtained = 0;
         this.killCount = 0;

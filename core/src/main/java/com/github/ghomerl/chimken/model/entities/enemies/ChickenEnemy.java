@@ -1,4 +1,4 @@
-package com.github.ghomerl.chimken.model.entities;
+package com.github.ghomerl.chimken.model.entities.enemies;
 
 import com.github.ghomerl.chimken.model.entities.weapons.EggThrower;
 
