@@ -17,6 +17,7 @@ public class Assets {
     public static final String UI_SKIN = "ui/skin/main/quantum-horizon-ui.json";
     public static final String SECONDARY_UI_SKIN = "ui/skin/secondary/pixthulhu-ui.json";
     public static final String MAIN_SOUNDTRACK = "audio/Main Theme.mp3";
+    public static final String VICTORY_SOUNDTRACK = "audio/Streetlight Manifesto - Oooo (Halfway Version).mp3";
     public static final String BATTLE_SOUNDTRACK = "audio/Battle Theme.mp3";
     public static final String RETRO_FONT = "fonts/RetroSigned-DYYY0.ttf";
     public static final String TRAJAN_FONT = "fonts/TrajanPro-Regular.ttf";
@@ -33,6 +34,7 @@ public class Assets {
     public static Skin secondSkin;
     public static Music mainTheme;
     public static Music battleTheme;
+    public static Music victoryTheme;
 
     public static void init() {
         manager = new AssetManager();
@@ -91,6 +93,7 @@ public class Assets {
 
     public static void queueGameAssets() {
         manager.load(BATTLE_SOUNDTRACK, Music.class);
+        manager.load(VICTORY_SOUNDTRACK, Music.class);
     }
 
 
@@ -101,6 +104,10 @@ public class Assets {
         if (battleTheme == null && manager.isLoaded(BATTLE_SOUNDTRACK)) {
             battleTheme = manager.get(BATTLE_SOUNDTRACK, Music.class);
             musicList.add(battleTheme);
+        }
+        if (victoryTheme == null && manager.isLoaded(VICTORY_SOUNDTRACK)) {
+            victoryTheme = manager.get(VICTORY_SOUNDTRACK, Music.class);
+            musicList.add(victoryTheme);
         }
         return true;
     }
