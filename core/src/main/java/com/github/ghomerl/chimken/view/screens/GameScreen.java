@@ -31,7 +31,6 @@ import com.github.ghomerl.chimken.model.entities.enemies.WaveManager;
 import com.github.ghomerl.chimken.model.entities.items.Item;
 import com.github.ghomerl.chimken.model.entities.projectiles.MissileProjectile;
 import com.github.ghomerl.chimken.model.entities.projectiles.Projectile;
-import com.github.ghomerl.chimken.model.entities.projectiles.SuperheatedMetalloidChunk;
 import com.github.ghomerl.chimken.model.entities.weapons.BoronRailgun;
 import com.github.ghomerl.chimken.view.assets.Assets;
 import com.github.ghomerl.chimken.view.renderers.ChickenRenderer;
@@ -89,6 +88,12 @@ public class GameScreen extends AbstractScreen {
     private BitmapFont scoreFont;
     private BitmapFont hudFont;
 
+    // ── HUD icon textures ─────────────────────────────────────────
+    private Texture iconHeart;
+    private Texture iconMissile;
+    private Texture iconLightning;
+    private Texture iconFood;
+
     // ── Missiles ──────────────────────────────────────────────────
     private final Array<MissileProjectile> missiles = new Array<>();
     private static final float EXPLOSION_DURATION = 0.4f;
@@ -145,8 +150,14 @@ public class GameScreen extends AbstractScreen {
 
         // ── Fonts ──────────────────────────────────────────────────
         scoreFont = Assets.buildFont(36, "Bold");
-        hudFont   = Assets.buildFont(28, "Default");
-        waveFont  = Assets.buildFont(120, "Bold");
+        hudFont = Assets.buildFont(28, "Default");
+        waveFont = Assets.buildFont(120, "Bold");
+
+        // ── HUD icon textures ──────────────────────────────────────
+        iconHeart = Assets.iconHeart;
+        iconMissile = Assets.iconMissile;
+        iconLightning = Assets.iconPower;
+        iconFood = Assets.iconFood;
 
         // ── Player ────────────────────────────────────────────────
         KeyBindings kb = LoginMenuController.isLoggedIn()
@@ -379,48 +390,36 @@ public class GameScreen extends AbstractScreen {
     }
 
     private void renderGameFrame(float delta) {
-        // ── Wave announcement (freezes gameplay) ──────────────────
+        // ── Tick wave-announcement timer (non-blocking) ────────────
         if (waveAnnouncementActive) {
             waveAnnouncementTimer -= delta;
             if (waveAnnouncementTimer <= 0f) {
                 waveAnnouncementActive = false;
             }
-
-            // Still draw the world (enemies at spawn positions)
-            Gdx.gl.glClearColor(0, 0, 0, 1);
-            Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-            drawWorldFilled();
-            drawWorldDebug();
-            drawExplosion();
-            drawHUD();
-            drawWaveAnnouncement();
-
-            uiViewport.apply();
-            stage.act(delta);
-            stage.draw();
-            return;
         }
 
-        // ── Update ─────────────────────────────────────────────────
+        // ── Update player (always, even during announcement) ───────
         playerController.update(delta);
 
-        // Enemy movement (formation or snake)
-        Wave wave = getCurrentWave();
-        if (wave != null && wave.getMovementType() == Wave.MovementType.SNAKE) {
-            if (snakeController != null) snakeController.update(delta);
-        } else {
-            EnemyMovementController.update(activeSpawns, delta);
+        // ── Enemy movement — ONLY when announcement is over ────────
+        if (!waveAnnouncementActive) {
+            Wave wave = getCurrentWave();
+            if (wave != null && wave.getMovementType() == Wave.MovementType.SNAKE) {
+                if (snakeController != null) snakeController.update(delta);
+            } else {
+                EnemyMovementController.update(activeSpawns, delta);
+            }
+
+            // Enemy AI (firing) — only when chickens are active
+            for (ChickenController cc : chickenControllers) {
+                cc.update(delta);
+            }
         }
 
-        // Enemy AI (firing)
-        for (ChickenController cc : chickenControllers) {
-            cc.update(delta);
-        }
-
-        // ── Items ─────────────────────────────────────────────────
+        // ── Items (always active) ─────────────────────────────────
         ItemController.update(items, player, delta);
 
-        // ── Missiles ──────────────────────────────────────────────
+        // ── Missiles (always active) ──────────────────────────────
         updateMissiles(delta);
 
         // ── Explosion visual timer ────────────────────────────────
@@ -428,15 +427,15 @@ public class GameScreen extends AbstractScreen {
             explosionTimer -= delta;
         }
 
-        // ── Collision detection ────────────────────────────────────
+        // ── Collision detection (always active) ────────────────────
         if (!playerController.isPlayerDead()) {
             resolveCollisions();
         }
 
-        // ── Extra-life check ───────────────────────────────────────
+        // ── Extra-life check (always active) ───────────────────────
         checkExtraLife();
 
-        // ── Death check ────────────────────────────────────────────
+        // ── Death check (always active) ────────────────────────────
         if (playerController.isPlayerDead()) {
             MusicManager.stopBattleTheme();
             saveRunResults(false);
@@ -458,6 +457,7 @@ public class GameScreen extends AbstractScreen {
         drawWorldDebug();
         drawExplosion();
         drawHUD();
+        drawWaveAnnouncement();
 
         uiViewport.apply();
         stage.act(delta);
@@ -555,7 +555,7 @@ public class GameScreen extends AbstractScreen {
     private void drawHUD() {
         uiViewport.apply();
 
-        // ── Semi-transparent panel + icons (ShapeRenderer) ────────
+        // ── Semi-transparent panel (ShapeRenderer) ─────────────────
         Gdx.gl.glEnable(GL20.GL_BLEND);
         shapeRenderer.setProjectionMatrix(uiCamera.combined);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
@@ -564,36 +564,29 @@ public class GameScreen extends AbstractScreen {
         shapeRenderer.setColor(0, 0, 0, 0.45f);
         shapeRenderer.rect(16, 16, 220, 184);
 
+        shapeRenderer.end();
+
+        // ── Icons + text labels (SpriteBatch) ─────────────────────
+        batch.setProjectionMatrix(uiCamera.combined);
+        batch.begin();
+
         // Row positions (bottom-up, 42px apart)
         float row0y = 176;  // Hearts
         float row1y = 134;  // Missiles
-        float row2y = 92;   // Thunder / weapon level
+        float row2y = 92;   // Lightning / weapon level
         float row3y = 50;   // Food
 
-        // 1) Heart (red circle)
-        shapeRenderer.setColor(Color.RED);
-        shapeRenderer.circle(42, row0y, 13);
+        float iconSize = 28f;
+        float iconX = 28f;
 
-        // 2) Missile (orange triangle pointing up)
-        shapeRenderer.setColor(Color.ORANGE);
-        shapeRenderer.triangle(30, row1y - 14, 54, row1y - 14, 42, row1y + 12);
-
-        // 3) Thunder / weapon level (yellow lightning bolt)
-        shapeRenderer.setColor(Color.YELLOW);
-        shapeRenderer.triangle(34, row2y + 12, 50, row2y + 12, 30, row2y - 4);
-        shapeRenderer.triangle(50, row2y + 12, 42, row2y - 4, 54, row2y - 4);
-        shapeRenderer.triangle(42, row2y - 4, 54, row2y - 4, 34, row2y - 14);
-        shapeRenderer.triangle(54, row2y - 4, 38, row2y - 14, 50, row2y - 14);
-
-        // 4) Food (green circle)
-        shapeRenderer.setColor(0.3f, 0.85f, 0.3f, 1f);
-        shapeRenderer.circle(42, row3y, 13);
-
-        shapeRenderer.end();
-
-        // ── Text labels (SpriteBatch) ─────────────────────────────
-        batch.setProjectionMatrix(uiCamera.combined);
-        batch.begin();
+        // 1) Heart icon — health
+        batch.draw(iconHeart, iconX, row0y - iconSize / 2f, iconSize, iconSize);
+        // 2) Missile icon — missile count
+        batch.draw(iconMissile, iconX, row1y - iconSize / 2f, iconSize, iconSize);
+        // 3) Lightning icon — weapon level
+        batch.draw(iconLightning, iconX, row2y - iconSize / 2f, iconSize, iconSize);
+        // 4) Food icon — food amount
+        batch.draw(iconFood, iconX, row3y - iconSize / 2f, iconSize, iconSize);
 
         hudFont.setColor(Color.WHITE);
         hudFont.draw(batch, String.valueOf(player.getHp()), 64, row0y + 8);
@@ -826,6 +819,10 @@ public class GameScreen extends AbstractScreen {
         if (scoreFont != null)  scoreFont.dispose();
         if (hudFont != null)    hudFont.dispose();
         if (waveFont != null)   waveFont.dispose();
+        if (iconHeart != null)     iconHeart.dispose();
+        if (iconMissile != null)   iconMissile.dispose();
+        if (iconLightning != null) iconLightning.dispose();
+        if (iconFood != null)      iconFood.dispose();
         super.dispose();
     }
 }

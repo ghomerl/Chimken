@@ -26,6 +26,11 @@ public class Assets {
     public static final String INVADERS_BOLD_FONT = "fonts/InvadersBold-D370.ttf";
     public static final String INVADERS_BI_FONT = "fonts/InvadersBoldItalic-A52m.ttf";
     public static final String INVADERS_FONT = "fonts/Invaders-ppWZ.ttf";
+    public static final String HEART_ICON = "icons/heartima.jpg";
+    public static final String FOOD_ICON = "icons/food.jpg";
+    public static final String POWER_ICON = "icons/lightning.jpg";
+    public static final String MISSILE_ICON = "icons/Missiles.png";
+
 
 
 
@@ -35,6 +40,10 @@ public class Assets {
     public static Music mainTheme;
     public static Music battleTheme;
     public static Music victoryTheme;
+    public static Texture iconHeart;
+    public static Texture iconFood;
+    public static Texture iconPower;
+    public static Texture iconMissile;
 
     public static void init() {
         manager = new AssetManager();
@@ -94,6 +103,10 @@ public class Assets {
     public static void queueGameAssets() {
         manager.load(BATTLE_SOUNDTRACK, Music.class);
         manager.load(VICTORY_SOUNDTRACK, Music.class);
+        manager.load(HEART_ICON, Texture.class);
+        manager.load(FOOD_ICON, Texture.class);
+        manager.load(POWER_ICON, Texture.class);
+        manager.load(MISSILE_ICON, Texture.class);
     }
 
 
@@ -109,6 +122,20 @@ public class Assets {
             victoryTheme = manager.get(VICTORY_SOUNDTRACK, Music.class);
             musicList.add(victoryTheme);
         }
+        if (iconHeart == null && manager.isLoaded(HEART_ICON)) {
+            iconHeart = manager.get(HEART_ICON, Texture.class);
+        }
+        if (iconFood == null && manager.isLoaded(FOOD_ICON)) {
+            iconFood = manager.get(FOOD_ICON, Texture.class);
+        }
+        if (iconPower == null && manager.isLoaded(POWER_ICON)) {
+            iconPower = manager.get(POWER_ICON, Texture.class);
+        }
+        if (iconMissile == null && manager.isLoaded(MISSILE_ICON)) {
+            iconMissile = manager.get(MISSILE_ICON, Texture.class);
+        }
+
+
         return true;
     }
 
