@@ -12,4 +12,9 @@ public class SuperheatedMetalloidChunk extends Projectile {
     public SuperheatedMetalloidChunk(float x, float y, float directionY) {
         super(x, y, WIDTH, HEIGHT, SPEED, DAMAGE, directionY);
     }
+
+
+    public SuperheatedMetalloidChunk(float x, float y, float directionY, int damage) {
+        super(x, y, WIDTH, HEIGHT, SPEED, damage, directionY);
+    }
 }

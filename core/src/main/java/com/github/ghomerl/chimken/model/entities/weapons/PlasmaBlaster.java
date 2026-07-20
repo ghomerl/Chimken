@@ -8,11 +8,18 @@ import com.github.ghomerl.chimken.model.entities.projectiles.PlasmaLaserProjecti
  */
 public class PlasmaBlaster extends Weapon {
 
-    /** Ten shots per second. */
-    private static final float FIRE_RATE = 0.1f;
+    /** Four shots per second. */
+    private static final float FIRE_RATE = 0.25f;
+    private static final float BASE_DAMAGE = 1f;
+    private static final float SPREAD = 20f;
 
     public PlasmaBlaster() {
         super(FIRE_RATE);
+    }
+
+    @Override
+    public float getProjectileSpeed() {
+        return 600f;
     }
 
     /**
@@ -24,8 +31,21 @@ public class PlasmaBlaster extends Weapon {
         if (!canFire()) {
             return;
         }
-        float halfW = 4f; // half of PlasmaLaserProjectile.WIDTH (8)
+        float halfW = 4f;
         projectiles.add(new PlasmaLaserProjectile(centerX - halfW, y, directionY));
         resetCooldown();
+    }
+
+    @Override
+    protected void spawnLeveledProjectiles(float centerX, float y, float directionY,
+                                           int extraProjectiles, float damageMultiplier) {
+        int damage = Math.max(1, Math.round(BASE_DAMAGE * damageMultiplier));
+        float halfW = 4f;
+        int total = 1 + extraProjectiles;
+        float startX = centerX - (total - 1) * SPREAD / 2f;
+        for (int i = 0; i < total; i++) {
+            projectiles.add(new PlasmaLaserProjectile(
+                startX + i * SPREAD - halfW, y, directionY, damage));
+        }
     }
 }

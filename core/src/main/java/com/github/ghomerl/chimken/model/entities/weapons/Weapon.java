@@ -1,19 +1,15 @@
 package com.github.ghomerl.chimken.model.entities.weapons;
 
 import com.badlogic.gdx.utils.Array;
-import com.github.ghomerl.chimken.model.entities.enemies.Enemy;
 import com.github.ghomerl.chimken.model.entities.projectiles.Projectile;
 
-/**
- * Base weapon class.
- * A weapon lives inside a {@link com.github.ghomerl.chimken.model.entities.Player}
- * or {@link Enemy} and is responsible
- * for managing its own projectile instances — creating them on fire,
- * updating their positions every frame, and removing inactive ones.
- */
+
 public abstract class Weapon {
 
-    /** Seconds between consecutive shots. */
+
+    private static final int[] EXTRA_PROJECTILE_LEVELS = {3, 5, 10, 20};
+
+
     protected float fireRate;
     protected float cooldownTimer;
     protected final Array<Projectile> projectiles;
@@ -25,18 +21,56 @@ public abstract class Weapon {
     }
 
 
+
+
     public abstract void fire(float centerX, float y, float directionY);
+
+
+    public void fireLeveled(float centerX, float y, float directionY, int level) {
+        if (!canFire()) {
+            return;
+        }
+        int extras = countExtraProjectiles(level);
+        float dmgMult = calculateDamageMultiplier(level);
+        spawnLeveledProjectiles(centerX, y, directionY, extras, dmgMult);
+        resetCooldown();
+    }
+
+
+    protected void spawnLeveledProjectiles(float centerX, float y, float directionY,
+                                           int extraProjectiles, float damageMultiplier) {
+
+    }
 
 
     public void fireAt(float fromX, float fromY, float targetX, float targetY) {
         fire(fromX, fromY, -1f);
     }
 
-    /**
-     * Ticks the cooldown timer and updates every active projectile.
-     * Projectiles that have left the screen or been deactivated are
-     * removed from the internal list.
-     */
+
+    public float getProjectileSpeed() {
+        return 0f;
+    }
+
+    // ── Level math ───────────────────────────────────────────────
+
+    private int countExtraProjectiles(int level) {
+        int count = 0;
+        for (int lvl : EXTRA_PROJECTILE_LEVELS) {
+            if (level >= lvl) count++;
+        }
+        return count;
+    }
+
+    private float calculateDamageMultiplier(int level) {
+        int extras = countExtraProjectiles(level);
+        int damageLevels = Math.max(0, (level - 1) - extras);
+        return (float) Math.pow(1.1, damageLevels);
+    }
+
+    // ── Update ────────────────────────────────────────────────────
+
+
     public void update(float delta) {
         if (cooldownTimer > 0f) {
             cooldownTimer -= delta;

@@ -203,10 +203,11 @@ public class PlayerController extends InputAdapter {
 
     private void applyShooting() {
         if (attackPressed) {
-            player.getWeapon().fire(
+            player.getWeapon().fireLeveled(
                 player.getX() + player.getWidth() * 0.5f,
                 player.getY() + player.getHeight(),
-                1f
+                1f,
+                player.getWeaponLevel()
             );
         }
     }

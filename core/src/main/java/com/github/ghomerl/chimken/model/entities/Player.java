@@ -2,16 +2,10 @@ package com.github.ghomerl.chimken.model.entities;
 
 import com.badlogic.gdx.math.Rectangle;
 import com.github.ghomerl.chimken.model.KeyBindings;
-import com.github.ghomerl.chimken.model.entities.weapons.BoronRailgun;
 import com.github.ghomerl.chimken.model.entities.weapons.PlasmaBlaster;
 import com.github.ghomerl.chimken.model.entities.weapons.Weapon;
 
-/**
- * Represents the player entity in the game.
- * This is a pure data model — rendering and input are handled by
- * {@link com.github.ghomerl.chimken.view.renderers.PlayerRenderer} and
- * {@link com.github.ghomerl.chimken.controller.PlayerController} respectively.
- */
+
 public class Player {
 
     public static final float DEFAULT_WIDTH = 64;
@@ -32,6 +26,7 @@ public class Player {
     private int killCount;
     private int deathCount;
     private int totalPoints;
+    private int weaponLevel = 1;
 
     private boolean alive = true;
     private boolean visible = true;
@@ -49,7 +44,7 @@ public class Player {
 
         this.hp = 5;
         this.missileCount = 0;
-        this.weapon = new BoronRailgun();
+        this.weapon = new PlasmaBlaster();
         this.keysObtained = 0;
         this.foodObtained = 0;
         this.killCount = 0;
@@ -159,6 +154,16 @@ public class Player {
 
     public void setTotalPoints(int totalPoints) {
         this.totalPoints = totalPoints;
+    }
+
+    // ── Weapon Level ──────────────────────────────────────────
+
+    public int getWeaponLevel() {
+        return weaponLevel;
+    }
+
+    public void setWeaponLevel(int weaponLevel) {
+        this.weaponLevel = Math.max(1, weaponLevel);
     }
 
     // ── State ───────────────────────────────────────────────────
