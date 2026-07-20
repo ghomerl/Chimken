@@ -1,10 +1,9 @@
 package com.github.ghomerl.chimken.controller;
 
-import com.badlogic.gdx.math.Rectangle;
 import com.github.ghomerl.chimken.model.entities.Player;
 import com.github.ghomerl.chimken.model.entities.items.*;
 import com.github.ghomerl.chimken.model.entities.weapons.WeaponFactory;
-import com.github.ghomerl.chimken.model.entities.weapons.WeaponType;
+import com.github.ghomerl.chimken.model.entities.weapons.enums.WeaponType;
 import com.badlogic.gdx.utils.Array;
 
 

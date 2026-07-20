@@ -1,5 +1,7 @@
 package com.github.ghomerl.chimken.model.entities.weapons;
 
+import com.github.ghomerl.chimken.model.entities.weapons.enums.WeaponType;
+
 public final class WeaponFactory {
 
     private WeaponFactory() {

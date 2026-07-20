@@ -1,6 +1,6 @@
 package com.github.ghomerl.chimken.model.entities.items;
 
-import com.github.ghomerl.chimken.model.entities.weapons.WeaponType;
+import com.github.ghomerl.chimken.model.entities.weapons.enums.WeaponType;
 
 public class GiftItem extends FallingItem {
     private static final float WIDTH = 28f;

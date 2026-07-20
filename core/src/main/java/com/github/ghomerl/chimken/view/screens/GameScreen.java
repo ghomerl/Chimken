@@ -19,17 +19,23 @@ import com.badlogic.gdx.utils.Array;
 import com.github.ghomerl.chimken.controller.*;
 import com.github.ghomerl.chimken.controller.audio.MusicManager;
 import com.github.ghomerl.chimken.model.KeyBindings;
-import com.github.ghomerl.chimken.model.entities.ChickenEnemy;
-import com.github.ghomerl.chimken.model.entities.DoubleEggChicken;
-import com.github.ghomerl.chimken.model.entities.Enemy;
+import com.github.ghomerl.chimken.model.entities.enemies.ChickenEnemy;
+import com.github.ghomerl.chimken.model.entities.enemies.DoubleEggChicken;
+import com.github.ghomerl.chimken.model.entities.enemies.Enemy;
 import com.github.ghomerl.chimken.model.entities.Player;
-import com.github.ghomerl.chimken.model.entities.SniperChicken;
+import com.github.ghomerl.chimken.model.entities.enemies.SniperChicken;
+import com.github.ghomerl.chimken.model.entities.items.Item;
 import com.github.ghomerl.chimken.model.entities.projectiles.Projectile;
+import com.github.ghomerl.chimken.model.entities.projectiles.SuperheatedMetalloidChunk;
+import com.github.ghomerl.chimken.model.entities.weapons.BoronRailgun;
+import com.github.ghomerl.chimken.model.entities.weapons.PlasmaBlaster;
 import com.github.ghomerl.chimken.view.assets.Assets;
 import com.github.ghomerl.chimken.view.renderers.ChickenRenderer;
 import com.github.ghomerl.chimken.view.renderers.EggProjectileRenderer;
+import com.github.ghomerl.chimken.view.renderers.ItemRenderer;
 import com.github.ghomerl.chimken.view.renderers.PlayerRenderer;
 import com.github.ghomerl.chimken.view.renderers.ProjectileRenderer;
+import com.github.ghomerl.chimken.view.renderers.SuperheatedMetalloidChunkRenderer;
 
 public class GameScreen extends AbstractScreen {
 
@@ -52,6 +58,11 @@ public class GameScreen extends AbstractScreen {
 
     private ChickenRenderer chickenRenderer;
     private EggProjectileRenderer eggProjectileRenderer;
+
+    // ── Items ────────────────────────────────────────────────────
+    private final Array<Item> items = new Array<>();
+    private ItemRenderer itemRenderer;
+    private SuperheatedMetalloidChunkRenderer chunkRenderer;
 
     // ── Pause ─────────────────────────────────────────────────────
     private PauseController pauseController;
@@ -92,6 +103,7 @@ public class GameScreen extends AbstractScreen {
             Gdx.input.setInputProcessor(multiplexer);
         }
 
+        // Both first entry and re-entry need the game input processors.
         reAddInputProcessors();
 
         // When returning from Settings while still paused, make sure the
@@ -113,6 +125,8 @@ public class GameScreen extends AbstractScreen {
         projectileRenderer = new ProjectileRenderer();
         chickenRenderer = new ChickenRenderer();
         eggProjectileRenderer = new EggProjectileRenderer();
+        itemRenderer = new ItemRenderer();
+        chunkRenderer = new SuperheatedMetalloidChunkRenderer();
 
         // ── Player ────────────────────────────────────────────────
         KeyBindings kb = LoginMenuController.isLoggedIn()
@@ -313,6 +327,9 @@ public class GameScreen extends AbstractScreen {
         doubleEggChickenController.update(delta);
         sniperChickenController.update(delta);
 
+        // ── Items ─────────────────────────────────────────────────
+        ItemController.update(items, player, delta);
+
         // ── Collision detection ────────────────────────────────────
         if (!playerController.isPlayerDead()) {
             resolveCollisions();
@@ -347,15 +364,18 @@ public class GameScreen extends AbstractScreen {
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
 
         playerRenderer.render(shapeRenderer, player);
-        projectileRenderer.render(shapeRenderer, player.getWeapon().getProjectiles());
+        renderPlayerProjectiles(shapeRenderer);
 
         for (Enemy e : enemies) {
             if (e.isAlive()) chickenRenderer.render(shapeRenderer, e);
         }
 
         for (Enemy e : enemies) {
-            if (e.isAlive()) eggProjectileRenderer.render(shapeRenderer, e.getWeapon().getProjectiles());
+            eggProjectileRenderer.render(shapeRenderer, e.getWeapon().getProjectiles());
         }
+
+        // Items
+        itemRenderer.render(shapeRenderer, items);
 
         shapeRenderer.end();
     }
@@ -367,7 +387,7 @@ public class GameScreen extends AbstractScreen {
         playerRenderer.renderDebug(shapeRenderer, player);
 
         shapeRenderer.setColor(Color.GREEN);
-        projectileRenderer.renderDebug(shapeRenderer, player.getWeapon().getProjectiles());
+        renderPlayerProjectileDebug(shapeRenderer);
 
         shapeRenderer.setColor(Color.YELLOW);
         for (Enemy e : enemies) {
@@ -376,8 +396,12 @@ public class GameScreen extends AbstractScreen {
 
         shapeRenderer.setColor(Color.ORANGE);
         for (Enemy e : enemies) {
-            if (e.isAlive()) eggProjectileRenderer.renderDebug(shapeRenderer, e.getWeapon().getProjectiles());
+            eggProjectileRenderer.renderDebug(shapeRenderer, e.getWeapon().getProjectiles());
         }
+
+        // Items (magenta debug)
+        shapeRenderer.setColor(Color.MAGENTA);
+        itemRenderer.renderDebug(shapeRenderer, items);
 
         shapeRenderer.end();
     }
@@ -393,6 +417,7 @@ public class GameScreen extends AbstractScreen {
                 playerController.onPlayerHit(PlayerController.RESPAWN_RISE);
                 e.takeDamage(e.getHp()); // instant kill
                 awardKillPoints(e);
+                DropController.rollDrops(e, player, items, worldViewport.getWorldWidth());
                 break;
             }
         }
@@ -426,10 +451,33 @@ public class GameScreen extends AbstractScreen {
                     e.takeDamage(p.getDamage());
                     if (!e.isAlive()) {
                         awardKillPoints(e);
+                        DropController.rollDrops(e, player, items, worldViewport.getWorldWidth());
                     }
                     break;
                 }
             }
+        }
+    }
+
+    /**
+     * Renders the player's weapon projectiles using the correct
+     * renderer for the currently equipped weapon.
+     */
+    private void renderPlayerProjectiles(ShapeRenderer r) {
+        Array<Projectile> projs = player.getWeapon().getProjectiles();
+        if (player.getWeapon() instanceof BoronRailgun) {
+            chunkRenderer.render(r, projs);
+        } else {
+            projectileRenderer.render(r, projs);
+        }
+    }
+
+    private void renderPlayerProjectileDebug(ShapeRenderer r) {
+        Array<Projectile> projs = player.getWeapon().getProjectiles();
+        if (player.getWeapon() instanceof BoronRailgun) {
+            chunkRenderer.renderDebug(r, projs);
+        } else {
+            projectileRenderer.renderDebug(r, projs);
         }
     }
 

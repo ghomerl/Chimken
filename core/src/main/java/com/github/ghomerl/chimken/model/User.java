@@ -1,5 +1,7 @@
 package com.github.ghomerl.chimken.model;
 
+import com.badlogic.gdx.utils.Array;
+
 
 public class User {
 
@@ -7,21 +9,33 @@ public class User {
     private String displayName;
     private String username;
     private String password;
+
     private int highScore;
+    private int totalKills;
+    private int totalWins;
+
+    private int keys;
+
+    private Array<String> ownedShopItems;
+
     private int masterVolume;
     private int musicVolume;
     private int sfxVolume;
+
     private KeyBindings keyBindings;
-    private String items;
+
 
 
     public User() {
         this.highScore = 0;
+        this.totalKills = 0;
+        this.totalWins = 0;
+        this.keys = 0;
+        this.ownedShopItems = new Array<>();
         this.masterVolume = 100;
         this.musicVolume = 100;
         this.sfxVolume = 100;
         this.keyBindings = new KeyBindings();
-        this.items = "[]";
     }
 
 
@@ -31,8 +45,6 @@ public class User {
         this.username = username;
         this.password = password;
     }
-
-
 
     public int getId() {
         return id;
@@ -74,6 +86,38 @@ public class User {
         this.highScore = highScore;
     }
 
+    public int getTotalKills() {
+        return totalKills;
+    }
+
+    public void setTotalKills(int totalKills) {
+        this.totalKills = totalKills;
+    }
+
+    public int getTotalWins() {
+        return totalWins;
+    }
+
+    public void setTotalWins(int totalWins) {
+        this.totalWins = totalWins;
+    }
+
+    public int getKeys() {
+        return keys;
+    }
+
+    public void setKeys(int keys) {
+        this.keys = keys;
+    }
+
+    public Array<String> getOwnedShopItems() {
+        return ownedShopItems;
+    }
+
+    public void setOwnedShopItems(Array<String> ownedShopItems) {
+        this.ownedShopItems = ownedShopItems;
+    }
+
     public int getMasterVolume() {
         return masterVolume;
     }
@@ -104,13 +148,5 @@ public class User {
 
     public void setKeyBindings(KeyBindings keyBindings) {
         this.keyBindings = keyBindings;
-    }
-
-    public String getItems() {
-        return items;
-    }
-
-    public void setItems(String items) {
-        this.items = items;
     }
 }

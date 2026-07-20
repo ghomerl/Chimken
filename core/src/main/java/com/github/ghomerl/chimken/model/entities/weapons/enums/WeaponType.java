@@ -1,4 +1,4 @@
-package com.github.ghomerl.chimken.model.entities.weapons;
+package com.github.ghomerl.chimken.model.entities.weapons.enums;
 
 
 public enum WeaponType {
