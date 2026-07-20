@@ -18,6 +18,9 @@ import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Array;
 import com.github.ghomerl.chimken.controller.*;
 import com.github.ghomerl.chimken.controller.audio.MusicManager;
+import com.github.ghomerl.chimken.model.User;
+import com.github.ghomerl.chimken.model.dao.UserDAO;
+import com.github.ghomerl.chimken.model.runlog.RunLogDAO;
 import com.github.ghomerl.chimken.model.KeyBindings;
 import com.github.ghomerl.chimken.model.entities.Player;
 import com.github.ghomerl.chimken.model.entities.enemies.Enemy;
@@ -197,6 +200,7 @@ public class GameScreen extends AbstractScreen {
             // Level complete — player wins
             MusicManager.stopBattleTheme();
             MusicManager.playVictoryTheme();
+            saveRunResults(true);
             ScreenManager.setScreen(new WinScreen(
                 player.getTotalPoints(),
                 player.getKillCount(),
@@ -354,6 +358,7 @@ public class GameScreen extends AbstractScreen {
         // ── Death check ────────────────────────────────────────────
         if (playerController.isPlayerDead()) {
             MusicManager.stopBattleTheme();
+            saveRunResults(false);
             ScreenManager.setScreen(new GameOverScreen(player.getTotalPoints()));
             return;
         }
@@ -504,6 +509,33 @@ public class GameScreen extends AbstractScreen {
     private void awardKillPoints(Enemy enemy) {
         player.setTotalPoints(player.getTotalPoints() + enemy.getPoints());
         player.setKillCount(player.getKillCount() + 1);
+    }
+
+    /**
+     * Persists the results of a completed run:
+     * <ul>
+     *   <li>Saves high-score, kills, keys, and win flag via {@link UserDAO}</li>
+     *   <li>Appends a run-log entry to {@code chimken_run_logs.json}</li>
+     * </ul>
+     * Skips the user-stats update if no user is logged in, but
+     * always logs the run.
+     *
+     * @param won {@code true} if the player cleared the level
+     */
+    private void saveRunResults(boolean won) {
+        int score = player.getTotalPoints();
+        int kills = player.getKillCount();
+        int keys  = player.getKeysObtained();
+        int lastLevel = waveManager.getCurrentWaveNumber();
+
+        // Persist user statistics (high-score, kills, keys, wins)
+        if (LoginMenuController.isLoggedIn()) {
+            User user = LoginMenuController.getCurrentUser();
+            new UserDAO().updateRunResults(user, score, kills, keys, won);
+        }
+
+        // Always log the run to the JSON log file
+        RunLogDAO.logRun(score, lastLevel);
     }
 
     // ══════════════════════════════════════════════════════════════
