@@ -1,18 +1,28 @@
 package com.github.ghomerl.chimken.controller;
 
+import com.badlogic.gdx.math.Rectangle;
 import com.github.ghomerl.chimken.model.entities.Player;
 import com.github.ghomerl.chimken.model.entities.items.*;
 import com.github.ghomerl.chimken.model.entities.weapons.WeaponFactory;
 import com.github.ghomerl.chimken.model.entities.weapons.enums.WeaponType;
 import com.badlogic.gdx.utils.Array;
 
-
+/**
+ * Updates all active items (movement, lifetime) and handles
+ * player ↔ item collisions (collection).
+ */
 public final class ItemController {
 
     private ItemController() {
     }
 
-
+    /**
+     * Updates every item, removes expired ones, and checks for
+     * player collection.
+     *
+     * @param items  the live item list (modified in-place)
+     * @param player the player model
+     */
     public static void update(Array<Item> items, Player player, float delta) {
         for (int i = items.size - 1; i >= 0; i--) {
             Item item = items.get(i);
@@ -40,7 +50,15 @@ public final class ItemController {
         player.setTotalPoints(player.getTotalPoints() + item.getPoints());
 
         if (item.getFoodUnits() > 0) {
-            player.setFoodObtained(player.getFoodObtained() + item.getFoodUnits());
+            int oldFood = player.getFoodObtained();
+            player.setFoodObtained(oldFood + item.getFoodUnits());
+            int newFood = player.getFoodObtained();
+
+            // Grant 1 missile for every 50 food accumulated
+            int missilesGained = (newFood / 50) - (oldFood / 50);
+            if (missilesGained > 0) {
+                player.setMissileCount(player.getMissileCount() + missilesGained);
+            }
         }
 
         if (item.getKeyCount() > 0) {

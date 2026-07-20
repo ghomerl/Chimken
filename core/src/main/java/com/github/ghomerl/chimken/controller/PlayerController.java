@@ -54,6 +54,10 @@ public class PlayerController extends InputAdapter {
     private boolean leftPressed;
     private boolean rightPressed;
     private boolean attackPressed;
+    private boolean missilePressed;
+
+    /** Set to {@code true} once per frame when the missile key is pressed. */
+    private boolean missileRequested;
 
     /**
      * @param player      the player model to control
@@ -106,9 +110,23 @@ public class PlayerController extends InputAdapter {
         return playerDead;
     }
 
+    // ── Missile request API ───────────────────────────────────────
+
+    /**
+     * @return {@code true} if the player pressed the missile key
+     *         this frame (consumed on read).
+     */
+    public boolean consumeMissileRequest() {
+        boolean r = missileRequested;
+        missileRequested = false;
+        return r;
+    }
+
     // ── Per-frame update ───────────────────────────────────────────
 
     public void update(float delta) {
+        missileRequested = false;
+
         // Weapon projectiles always tick (even while hit)
         player.getWeapon().update(delta);
 
@@ -116,6 +134,7 @@ public class PlayerController extends InputAdapter {
             case NORMAL:
                 applyMovement(delta);
                 applyShooting();
+                checkMissileInput();
                 break;
 
             case HIT_WAIT:
@@ -140,6 +159,7 @@ public class PlayerController extends InputAdapter {
             case INVINCIBLE:
                 applyMovement(delta);
                 applyShooting();
+                checkMissileInput();
                 stateTimer -= delta;
                 // Blink at ~5 Hz
                 player.setVisible(Math.floor(stateTimer * 10f) % 2 == 0);
@@ -182,6 +202,7 @@ public class PlayerController extends InputAdapter {
         else if (keycode == kb.getLeft())        leftPressed  = pressed;
         else if (keycode == kb.getRight())       rightPressed = pressed;
         else if (keycode == kb.getAttack())      attackPressed = pressed;
+        else if (keycode == kb.getMissile())     missilePressed = pressed;
     }
 
     private void applyMovement(float delta) {
@@ -209,6 +230,12 @@ public class PlayerController extends InputAdapter {
                 1f,
                 player.getWeaponLevel()
             );
+        }
+    }
+
+    private void checkMissileInput() {
+        if (missilePressed && player.getMissileCount() > 0) {
+            missileRequested = true;
         }
     }
 }

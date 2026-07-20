@@ -12,7 +12,16 @@ import com.badlogic.gdx.utils.Array;
  */
 public class Wave {
 
+    /** How the enemies in this wave move after spawning. */
+    public enum MovementType {
+        /** Enemies move from spawn to a target position and stop. */
+        FORMATION,
+        /** Enemies follow a snake / centipede path. */
+        SNAKE
+    }
+
     private final Array<SpawnEntry> spawns;
+    private MovementType movementType = MovementType.FORMATION;
 
     public Wave() {
         this.spawns = new Array<>();
@@ -38,5 +47,16 @@ public class Wave {
      */
     public int size() {
         return spawns.size;
+    }
+
+    // ── Movement type ────────────────────────────────────────────
+
+    public MovementType getMovementType() {
+        return movementType;
+    }
+
+    public Wave setMovementType(MovementType movementType) {
+        this.movementType = movementType;
+        return this;
     }
 }

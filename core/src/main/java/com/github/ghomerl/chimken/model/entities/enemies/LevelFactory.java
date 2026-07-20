@@ -41,17 +41,57 @@ public final class LevelFactory {
         float cw = ChickenEnemy.DEFAULT_WIDTH;
 
         // ── Phase A: 2x2 square (4 chickens) ───────────────────
-        Wave waveA = build2x2Wave(cw, worldWidth, worldHeight);
-        waves.add(waveA);
+        waves.add(build2x2Wave(cw, worldWidth, worldHeight));
 
         // ── Phase B: 3x3 square (9 chickens) ──────────────────
-        Wave waveB = build3x3Wave(cw, worldWidth, worldHeight);
-        waves.add(waveB);
+        waves.add(build3x3Wave(cw, worldWidth, worldHeight));
 
         return waves;
     }
 
-    // ── Phase builders ───────────────────────────────────────────
+    // ══════════════════════════════════════════════════════════════
+    //  Level 2
+    // ══════════════════════════════════════════════════════════════
+
+    /**
+     * Builds Level 2 — one phase of 20 normal chickens with
+     * {@code 1.1x} base HP in a snake / centipede formation.
+     * <p>
+     * The chickens enter from the right side at the vertical
+     * middle of the screen in a horizontal line.  The leader
+     * hugs the screen edges (left → down → right → down → …)
+     * while the rest of the line follows like a snake.
+     * The wave ends when every chicken is killed or goes
+     * out of bounds.
+     *
+     * @param worldWidth  the horizontal extent of the game world
+     * @param worldHeight the vertical extent of the game world
+     * @return array containing a single snake wave
+     */
+    public static Array<Wave> buildLevel2(float worldWidth, float worldHeight) {
+        Array<Wave> waves = new Array<>();
+        float cw = ChickenEnemy.DEFAULT_WIDTH;
+        float spawnY = worldHeight * 0.5f;
+        int hp = (int) Math.ceil(ChickenEnemy.DEFAULT_HP * 1.1f);
+
+        Wave wave = new Wave();
+        wave.setMovementType(Wave.MovementType.SNAKE);
+
+        for (int i = 0; i < 20; i++) {
+            float spawnX = worldWidth + cw + i * cw;
+            Enemy e = new ChickenEnemy(spawnX, spawnY,
+                cw, cw, 0f, hp, 1, 100, new EggThrower());
+            // Target equals spawn — movement is handled by SnakeMovementController
+            wave.add(new SpawnEntry(e, spawnX, spawnY));
+        }
+
+        waves.add(wave);
+        return waves;
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    //  Level 1 phase builders
+    // ══════════════════════════════════════════════════════════════
 
     private static Wave build2x2Wave(float cw, float ww, float wh) {
         Wave wave = new Wave();

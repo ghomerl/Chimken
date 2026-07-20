@@ -106,4 +106,13 @@ public class WaveManager {
     public int getTotalWaves() {
         return waves.size;
     }
+
+    /**
+     * Returns the wave object currently being played,
+     * or {@code null} if the index is out of range.
+     */
+    public Wave getCurrentWave() {
+        if (currentWaveIndex >= waves.size) return null;
+        return waves.get(currentWaveIndex);
+    }
 }

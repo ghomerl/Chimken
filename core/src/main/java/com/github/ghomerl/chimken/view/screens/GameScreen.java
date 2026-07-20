@@ -6,11 +6,11 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
-import com.badlogic.gdx.scenes.scene2d.ui.Stack;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
@@ -29,6 +29,7 @@ import com.github.ghomerl.chimken.model.entities.enemies.SpawnEntry;
 import com.github.ghomerl.chimken.model.entities.enemies.Wave;
 import com.github.ghomerl.chimken.model.entities.enemies.WaveManager;
 import com.github.ghomerl.chimken.model.entities.items.Item;
+import com.github.ghomerl.chimken.model.entities.projectiles.MissileProjectile;
 import com.github.ghomerl.chimken.model.entities.projectiles.Projectile;
 import com.github.ghomerl.chimken.model.entities.projectiles.SuperheatedMetalloidChunk;
 import com.github.ghomerl.chimken.model.entities.weapons.BoronRailgun;
@@ -77,6 +78,30 @@ public class GameScreen extends AbstractScreen {
     // ── Re-entry guard ────────────────────────────────────────────
     private boolean initialized = false;
 
+    // ── Wave announcement ─────────────────────────────────────────
+    private static final float WAVE_ANNOUNCE_DURATION = 3f;
+    private boolean waveAnnouncementActive;
+    private float waveAnnouncementTimer;
+    private int announcedWaveNumber;
+    private BitmapFont waveFont;
+
+    // ── HUD ───────────────────────────────────────────────────────
+    private BitmapFont scoreFont;
+    private BitmapFont hudFont;
+
+    // ── Missiles ──────────────────────────────────────────────────
+    private final Array<MissileProjectile> missiles = new Array<>();
+    private static final float EXPLOSION_DURATION = 0.4f;
+    private static final float EXPLOSION_MAX_RADIUS = 350f;
+    private float explosionTimer;
+    private float explosionX, explosionY;
+
+    // ── Snake movement ────────────────────────────────────────────
+    private SnakeMovementController snakeController;
+
+    // ── Extra lives ───────────────────────────────────────────────
+    private int nextLifeThreshold;
+
     // ══════════════════════════════════════════════════════════════
     //  Lifecycle
     // ══════════════════════════════════════════════════════════════
@@ -118,6 +143,11 @@ public class GameScreen extends AbstractScreen {
         itemRenderer = new ItemRenderer();
         chunkRenderer = new SuperheatedMetalloidChunkRenderer();
 
+        // ── Fonts ──────────────────────────────────────────────────
+        scoreFont = Assets.buildFont(36, "Bold");
+        hudFont   = Assets.buildFont(28, "Default");
+        waveFont  = Assets.buildFont(120, "Bold");
+
         // ── Player ────────────────────────────────────────────────
         KeyBindings kb = LoginMenuController.isLoggedIn()
             ? LoginMenuController.getCurrentUser().getKeyBindings()
@@ -134,36 +164,22 @@ public class GameScreen extends AbstractScreen {
         // ── Pause controller ──────────────────────────────────────
         pauseController = new PauseController();
 
-        // ── Wave system ────────────────────────────────────────────
+        // ── Wave system (Level 1 + Level 2) ──────────────────────
         float ww = worldViewport.getWorldWidth();
         float wh = worldViewport.getWorldHeight();
-        Array<Wave> waves = LevelFactory.buildLevel1(ww, wh);
-        // Level 1 has two phases (index 0 and 1), both part of wave 1.
-        // lastWaveIndex = 1 → winning after phase B is cleared.
-        waveManager = new WaveManager(waves, 1);
-        spawnNextWave();
+        Array<Wave> allWaves = new Array<>();
+        allWaves.addAll(LevelFactory.buildLevel1(ww, wh));
+        allWaves.addAll(LevelFactory.buildLevel2(ww, wh));
+        waveManager = new WaveManager(allWaves, allWaves.size - 1);
 
-        // ── UI: back button ────────────────────────────────────────
-        Stack stack = new Stack();
-        stack.setFillParent(true);
+        // ── Extra-life tracker ────────────────────────────────────
+        nextLifeThreshold = 10_000;
 
-        Table backBtnWrapper = new Table();
-        backBtnWrapper.top().left().pad(12);
-        TextButton backBtn = new TextButton("back", skin);
-        backBtnWrapper.add(backBtn).width(240).height(60);
-
-        stack.add(backBtnWrapper);
-        stage.addActor(stack);
-
-        backBtn.addListener(new ClickListener() {
-            @Override
-            public void clicked(InputEvent event, float x, float y) {
-                GameScreenController.openPreGameMenu();
-            }
-        });
-
-        // ── UI: pause overlay ──────────────────────────────────────
+        // ── UI: pause overlay only (no back button) ──────────────
         createPauseOverlay();
+
+        // ── Spawn first wave (triggers announcement) ─────────────
+        spawnNextWave();
     }
 
     // ══════════════════════════════════════════════════════════════
@@ -172,7 +188,8 @@ public class GameScreen extends AbstractScreen {
 
     /**
      * Spawns all enemies of the next wave, creates their controllers,
-     * and stores the spawn entries for movement.
+     * and stores the spawn entries for movement.  Also starts the
+     * wave-announcement timer.
      */
     private void spawnNextWave() {
         // Dispose old enemies' weapons
@@ -181,6 +198,7 @@ public class GameScreen extends AbstractScreen {
         }
         enemies.clear();
         chickenControllers.clear();
+        snakeController = null;
 
         waveManager.spawnCurrentWave(enemies);
         activeSpawns = waveManager.getCurrentSpawns();
@@ -189,6 +207,29 @@ public class GameScreen extends AbstractScreen {
         for (Enemy e : enemies) {
             chickenControllers.add(new ChickenController(e));
         }
+
+        // If the wave uses snake movement, create the controller
+        Wave currentWave = waveManager.getCurrentWave();
+        if (currentWave != null
+            && currentWave.getMovementType() == Wave.MovementType.SNAKE) {
+            snakeController = new SnakeMovementController(
+                enemies,
+                worldViewport.getWorldWidth(),
+                worldViewport.getWorldHeight()
+            );
+        }
+
+        // Start wave announcement
+        waveAnnouncementActive = true;
+        waveAnnouncementTimer = WAVE_ANNOUNCE_DURATION;
+        announcedWaveNumber = waveManager.getCurrentWaveNumber();
+    }
+
+    /**
+     * Returns the current Wave object (convenience).
+     */
+    private Wave getCurrentWave() {
+        return waveManager.getCurrentWave();
     }
 
     /**
@@ -330,17 +371,46 @@ public class GameScreen extends AbstractScreen {
         drawWorldFilled();
         drawWorldDebug();
 
+        drawHUD();
+
         uiViewport.apply();
         stage.act(delta);
         stage.draw();
     }
 
     private void renderGameFrame(float delta) {
+        // ── Wave announcement (freezes gameplay) ──────────────────
+        if (waveAnnouncementActive) {
+            waveAnnouncementTimer -= delta;
+            if (waveAnnouncementTimer <= 0f) {
+                waveAnnouncementActive = false;
+            }
+
+            // Still draw the world (enemies at spawn positions)
+            Gdx.gl.glClearColor(0, 0, 0, 1);
+            Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+            drawWorldFilled();
+            drawWorldDebug();
+            drawExplosion();
+            drawHUD();
+            drawWaveAnnouncement();
+
+            uiViewport.apply();
+            stage.act(delta);
+            stage.draw();
+            return;
+        }
+
         // ── Update ─────────────────────────────────────────────────
         playerController.update(delta);
 
-        // Enemy movement (formation entry)
-        EnemyMovementController.update(activeSpawns, delta);
+        // Enemy movement (formation or snake)
+        Wave wave = getCurrentWave();
+        if (wave != null && wave.getMovementType() == Wave.MovementType.SNAKE) {
+            if (snakeController != null) snakeController.update(delta);
+        } else {
+            EnemyMovementController.update(activeSpawns, delta);
+        }
 
         // Enemy AI (firing)
         for (ChickenController cc : chickenControllers) {
@@ -350,10 +420,21 @@ public class GameScreen extends AbstractScreen {
         // ── Items ─────────────────────────────────────────────────
         ItemController.update(items, player, delta);
 
+        // ── Missiles ──────────────────────────────────────────────
+        updateMissiles(delta);
+
+        // ── Explosion visual timer ────────────────────────────────
+        if (explosionTimer > 0f) {
+            explosionTimer -= delta;
+        }
+
         // ── Collision detection ────────────────────────────────────
         if (!playerController.isPlayerDead()) {
             resolveCollisions();
         }
+
+        // ── Extra-life check ───────────────────────────────────────
+        checkExtraLife();
 
         // ── Death check ────────────────────────────────────────────
         if (playerController.isPlayerDead()) {
@@ -375,6 +456,8 @@ public class GameScreen extends AbstractScreen {
 
         drawWorldFilled();
         drawWorldDebug();
+        drawExplosion();
+        drawHUD();
 
         uiViewport.apply();
         stage.act(delta);
@@ -403,6 +486,15 @@ public class GameScreen extends AbstractScreen {
         }
 
         itemRenderer.render(shapeRenderer, items);
+
+        // Missiles
+        for (MissileProjectile m : missiles) {
+            if (m.hasExploded()) continue;
+            shapeRenderer.setColor(Color.ORANGE);
+            shapeRenderer.rect(m.getX() - 6, m.getY() - 14, 12, 28);
+            shapeRenderer.setColor(Color.YELLOW);
+            shapeRenderer.rect(m.getX() - 3, m.getY() - 10, 6, 20);
+        }
 
         shapeRenderer.end();
     }
@@ -434,12 +526,173 @@ public class GameScreen extends AbstractScreen {
         shapeRenderer.end();
     }
 
+    // ── Explosion effect ──────────────────────────────────────────
+
+    private void drawExplosion() {
+        if (explosionTimer <= 0f) return;
+
+        worldViewport.apply();
+        shapeRenderer.setProjectionMatrix(worldCamera.combined);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+
+        float progress = 1f - explosionTimer / EXPLOSION_DURATION;
+        float radius = progress * EXPLOSION_MAX_RADIUS;
+        float alpha = 1f - progress;
+
+        // Outer ring
+        shapeRenderer.setColor(1f, 0.6f, 0f, alpha * 0.4f);
+        shapeRenderer.circle(explosionX, explosionY, radius);
+
+        // Inner core
+        shapeRenderer.setColor(1f, 1f, 0.6f, alpha * 0.6f);
+        shapeRenderer.circle(explosionX, explosionY, radius * 0.5f);
+
+        shapeRenderer.end();
+    }
+
+    // ── HUD ───────────────────────────────────────────────────────
+
+    private void drawHUD() {
+        uiViewport.apply();
+
+        // ── Semi-transparent panel + icons (ShapeRenderer) ────────
+        Gdx.gl.glEnable(GL20.GL_BLEND);
+        shapeRenderer.setProjectionMatrix(uiCamera.combined);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+
+        // Panel background
+        shapeRenderer.setColor(0, 0, 0, 0.45f);
+        shapeRenderer.rect(16, 16, 220, 184);
+
+        // Row positions (bottom-up, 42px apart)
+        float row0y = 176;  // Hearts
+        float row1y = 134;  // Missiles
+        float row2y = 92;   // Thunder / weapon level
+        float row3y = 50;   // Food
+
+        // 1) Heart (red circle)
+        shapeRenderer.setColor(Color.RED);
+        shapeRenderer.circle(42, row0y, 13);
+
+        // 2) Missile (orange triangle pointing up)
+        shapeRenderer.setColor(Color.ORANGE);
+        shapeRenderer.triangle(30, row1y - 14, 54, row1y - 14, 42, row1y + 12);
+
+        // 3) Thunder / weapon level (yellow lightning bolt)
+        shapeRenderer.setColor(Color.YELLOW);
+        shapeRenderer.triangle(34, row2y + 12, 50, row2y + 12, 30, row2y - 4);
+        shapeRenderer.triangle(50, row2y + 12, 42, row2y - 4, 54, row2y - 4);
+        shapeRenderer.triangle(42, row2y - 4, 54, row2y - 4, 34, row2y - 14);
+        shapeRenderer.triangle(54, row2y - 4, 38, row2y - 14, 50, row2y - 14);
+
+        // 4) Food (green circle)
+        shapeRenderer.setColor(0.3f, 0.85f, 0.3f, 1f);
+        shapeRenderer.circle(42, row3y, 13);
+
+        shapeRenderer.end();
+
+        // ── Text labels (SpriteBatch) ─────────────────────────────
+        batch.setProjectionMatrix(uiCamera.combined);
+        batch.begin();
+
+        hudFont.setColor(Color.WHITE);
+        hudFont.draw(batch, String.valueOf(player.getHp()), 64, row0y + 8);
+        hudFont.draw(batch, String.valueOf(player.getMissileCount()), 64, row1y + 8);
+        hudFont.draw(batch, String.valueOf(player.getWeaponLevel()), 64, row2y + 8);
+        hudFont.draw(batch, String.valueOf(player.getFoodObtained()), 64, row3y + 8);
+
+        // Score — top-left
+        scoreFont.setColor(Color.WHITE);
+        scoreFont.draw(batch, "SCORE  " + player.getTotalPoints(), 20, 1060);
+
+        batch.end();
+    }
+
+    // ── Wave announcement ─────────────────────────────────────────
+
+    private void drawWaveAnnouncement() {
+        uiViewport.apply();
+        batch.setProjectionMatrix(uiCamera.combined);
+        batch.begin();
+
+        // Fade: full opacity for first 2.2s, then fade out over 0.8s
+        float alpha = 1f;
+        if (waveAnnouncementTimer < 0.8f) {
+            alpha = waveAnnouncementTimer / 0.8f;
+        }
+        waveFont.getColor().a = alpha;
+        String text = "Wave " + announcedWaveNumber;
+        com.badlogic.gdx.graphics.g2d.GlyphLayout layout = new com.badlogic.gdx.graphics.g2d.GlyphLayout(waveFont, text);
+        waveFont.draw(batch, layout,
+            (uiViewport.getWorldWidth() - layout.width) / 2f,
+            (uiViewport.getWorldHeight() + layout.height) / 2f);
+
+        batch.end();
+        waveFont.getColor().a = 1f; // reset
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    //  Missile logic
+    // ══════════════════════════════════════════════════════════════
+
+    private void updateMissiles(float delta) {
+        // Check if the player requested a missile this frame
+        if (playerController.consumeMissileRequest() && player.getMissileCount() > 0) {
+            player.setMissileCount(player.getMissileCount() - 1);
+            float cx = player.getX() + player.getWidth() / 2f;
+            float cy = player.getY() + player.getHeight() / 2f;
+            missiles.add(new MissileProjectile(
+                cx, cy,
+                worldViewport.getWorldWidth() / 2f,
+                worldViewport.getWorldHeight() / 2f
+            ));
+        }
+
+        // Update missiles
+        for (int i = missiles.size - 1; i >= 0; i--) {
+            MissileProjectile m = missiles.get(i);
+            m.update(delta);
+
+            if (m.hasExploded()) {
+                // Deal 2500 damage to ALL alive enemies
+                for (Enemy e : enemies) {
+                    if (e.isAlive()) {
+                        e.takeDamage(2500);
+                        if (!e.isAlive()) {
+                            awardKillPoints(e);
+                            DropController.rollDrops(e, player, items,
+                                worldViewport.getWorldWidth());
+                        }
+                    }
+                }
+                // Start explosion visual
+                explosionTimer = EXPLOSION_DURATION;
+                explosionX = m.getX();
+                explosionY = m.getY();
+                missiles.removeIndex(i);
+            } else if (!m.isActive()) {
+                missiles.removeIndex(i);
+            }
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    //  Extra-life logic
+    // ══════════════════════════════════════════════════════════════
+
+    private void checkExtraLife() {
+        if (player.getTotalPoints() >= nextLifeThreshold) {
+            player.setHp(player.getHp() + 1);
+            nextLifeThreshold += 10_000;
+        }
+    }
+
     // ══════════════════════════════════════════════════════════════
     //  Collision resolution
     // ══════════════════════════════════════════════════════════════
 
     private void resolveCollisions() {
-        // 1) Player body ↔ Enemy body
+        // 1) Player body <-> Enemy body
         for (Enemy e : enemies) {
             if (CollisionController.checkPlayerEnemyCollision(player, e)) {
                 playerController.onPlayerHit(PlayerController.RESPAWN_RISE);
@@ -450,7 +703,7 @@ public class GameScreen extends AbstractScreen {
             }
         }
 
-        // 2) Enemy egg ↔ Player
+        // 2) Enemy egg <-> Player
         if (CollisionController.canPlayerCollide(player)) {
             boolean playerWasHit = false;
             for (Enemy e : enemies) {
@@ -469,7 +722,7 @@ public class GameScreen extends AbstractScreen {
             }
         }
 
-        // 3) Player projectile ↔ Enemy
+        // 3) Player projectile <-> Enemy
         Array<Projectile> plasmas = player.getWeapon().getProjectiles();
         for (int i = plasmas.size - 1; i >= 0; i--) {
             Projectile p = plasmas.get(i);
@@ -570,6 +823,9 @@ public class GameScreen extends AbstractScreen {
         if (panelBgTexture != null) {
             panelBgTexture.dispose();
         }
+        if (scoreFont != null)  scoreFont.dispose();
+        if (hudFont != null)    hudFont.dispose();
+        if (waveFont != null)   waveFont.dispose();
         super.dispose();
     }
 }

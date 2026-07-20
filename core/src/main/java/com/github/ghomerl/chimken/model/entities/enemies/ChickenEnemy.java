@@ -11,7 +11,7 @@ public class ChickenEnemy extends Enemy {
     public static final float DEFAULT_WIDTH = 64f;
     public static final float DEFAULT_HEIGHT = 64f;
     private static final float DEFAULT_SPEED = 0f;
-    private static final int DEFAULT_HP = 3;
+    public static final int DEFAULT_HP = 3;
     private static final int DEFAULT_DAMAGE = 1;
     private static final int DEFAULT_POINTS = 100;
 
