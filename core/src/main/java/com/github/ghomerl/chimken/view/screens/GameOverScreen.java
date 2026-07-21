@@ -10,10 +10,6 @@ import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.github.ghomerl.chimken.controller.GameOverController;
 import com.github.ghomerl.chimken.view.assets.Assets;
 
-/**
- * Displays "GAME OVER" centred on screen with the player's final
- * score and a main-menu button in the top-left corner.
- */
 public class GameOverScreen extends AbstractScreen {
 
     private final int score;
@@ -29,13 +25,11 @@ public class GameOverScreen extends AbstractScreen {
         Stack stack = new Stack();
         stack.setFillParent(true);
 
-        // ── Main Menu button (top-left) ───────────────────────────
         Table menuBtnWrapper = new Table();
         menuBtnWrapper.top().left().pad(12);
         TextButton menuBtn = new TextButton("Main Menu", skin);
         menuBtnWrapper.add(menuBtn).width(240).height(60);
 
-        // ── Centre content ────────────────────────────────────────
         Table centre = new Table();
         centre.center();
 

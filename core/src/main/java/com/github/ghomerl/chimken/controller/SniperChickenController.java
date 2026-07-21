@@ -5,17 +5,10 @@ import com.github.ghomerl.chimken.model.entities.enemies.SniperChicken;
 
 import java.util.Random;
 
-/**
- * Controls a {@link SniperChicken}: each frame there is a
- * {@value #FIRE_CHANCE_DENOMINATOR}-in-1 probability of firing
- * an egg aimed at the player's current position.
- * <p>
- * The egg does <b>not</b> track the player after being fired —
- * it travels in a fixed straight line determined at launch time.
- */
+
 public class SniperChickenController {
 
-    private static final int FIRE_CHANCE_DENOMINATOR = 180;
+    private static final int FIRE_CHANCE_DENOMINATOR = 240;
 
     private final SniperChicken enemy;
     private final Player player;
@@ -26,10 +19,7 @@ public class SniperChickenController {
         this.player = player;
     }
 
-    /**
-     * Rolls the dice and, on a hit, fires a targeted egg toward
-     * the player's centre.  Also ticks the weapon's projectile list.
-     */
+
     public void update(float delta) {
         if (!enemy.isAlive()) {
             enemy.getWeapon().update(delta);

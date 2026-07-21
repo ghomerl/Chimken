@@ -87,11 +87,49 @@ public class MusicManager {
         }
     }
 
-    
+    public static void playBossFightTheme() {
+        Music theme = Assets.bossFightTheme;
+        if (theme != null) {
+            if (!theme.isPlaying()) {
+                theme.setLooping(true);
+                theme.setVolume(AudioManager.masterVolume * musicVolume / 10000f);
+                theme.play();
+            }
+        }
+    }
+
+    public static void stopBossFightTheme() {
+        Music theme = Assets.bossFightTheme;
+        if (theme != null && theme.isPlaying()) {
+            theme.stop();
+        }
+    }
+
+    public static void playBossFightTheme2() {
+        Music theme = Assets.bossFightTheme2;
+        if (theme != null) {
+            if (!theme.isPlaying()) {
+                theme.setLooping(true);
+                theme.setVolume(AudioManager.masterVolume * musicVolume / 10000f);
+                theme.play();
+            }
+        }
+    }
+
+    public static void stopBossFightTheme2() {
+        Music theme = Assets.bossFightTheme2;
+        if (theme != null && theme.isPlaying()) {
+            theme.stop();
+        }
+    }
+
+
     public static void stopAll() {
         stopMainTheme();
         stopBattleTheme();
         stopVictoryTheme();
+        stopBossFightTheme();
+        stopBossFightTheme2();
     }
 
 }

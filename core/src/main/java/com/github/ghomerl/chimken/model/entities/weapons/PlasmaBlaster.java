@@ -3,13 +3,10 @@ package com.github.ghomerl.chimken.model.entities.weapons;
 import com.github.ghomerl.chimken.model.entities.projectiles.PlasmaLaserProjectile;
 import com.github.ghomerl.chimken.model.entities.weapons.enums.WeaponType;
 
-/**
- * Rapid-fire plasma blaster — the default weapon equipped by the player.
- * Fires {@link PlasmaLaserProjectile} instances at a steady rate.
- */
+
 public class PlasmaBlaster extends Weapon {
 
-    /** Four shots per second. */
+
     private static final float FIRE_RATE = 0.25f;
     private static final float BASE_DAMAGE = 1f;
     private static final float SPREAD = 20f;
@@ -28,10 +25,7 @@ public class PlasmaBlaster extends Weapon {
         return 600f;
     }
 
-    /**
-     * Spawns a {@link PlasmaLaserProjectile} centred on {@code centerX}
-     * if the weapon is off cooldown.
-     */
+
     @Override
     public void fire(float centerX, float y, float directionY) {
         if (!canFire()) {

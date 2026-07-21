@@ -1,41 +1,38 @@
 package com.github.ghomerl.chimken.model.runlog;
 
-/**
- * A single persisted run record.
- * <p>
- * Each completed run (win or loss) produces one {@code RunLog} entry
- * that is appended to {@code chimken_run_logs.json} via
- * {@link com.github.ghomerl.chimken.model.runlog.RunLogDAO}.
- * <p>
- * Fields are JSON-serialisable by LibGDX's {@code Json} utility.
- */
+
 public class RunLog {
+
+
+    public static final int NO_USER = -1;
 
     private int id;
     private String timestamp;
     private int score;
     private int lastLevelReached;
 
-    // ══════════════════════════════════════════════════════════════
-    //  Constructors
-    // ══════════════════════════════════════════════════════════════
 
-    /**
-     * No-arg constructor required for LibGDX JSON deserialization.
-     */
+    private int userId = NO_USER;
+
+
     public RunLog() {
     }
 
+
+    @Deprecated
     public RunLog(int id, String timestamp, int score, int lastLevelReached) {
+        this(id, timestamp, score, lastLevelReached, NO_USER);
+    }
+
+
+    public RunLog(int id, String timestamp, int score, int lastLevelReached, int userId) {
         this.id = id;
         this.timestamp = timestamp;
         this.score = score;
         this.lastLevelReached = lastLevelReached;
+        this.userId = userId;
     }
 
-    // ══════════════════════════════════════════════════════════════
-    //  Accessors
-    // ══════════════════════════════════════════════════════════════
 
     public int getId() {
         return id;
@@ -67,5 +64,19 @@ public class RunLog {
 
     public void setLastLevelReached(int lastLevelReached) {
         this.lastLevelReached = lastLevelReached;
+    }
+
+
+    public int getUserId() {
+        return userId;
+    }
+
+    public void setUserId(int userId) {
+        this.userId = userId;
+    }
+
+
+    public boolean hasUser() {
+        return userId != NO_USER;
     }
 }

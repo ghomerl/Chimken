@@ -110,6 +110,13 @@ public class MainMenuScreen extends AbstractScreen {
             }
         });
 
+        leaderboardBtn.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                MainMenuController.openLeaderboard();
+            }
+        });
+
         exitBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {

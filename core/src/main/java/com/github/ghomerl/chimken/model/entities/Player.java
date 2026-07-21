@@ -8,9 +8,9 @@ import com.github.ghomerl.chimken.model.entities.weapons.Weapon;
 
 public class Player {
 
-    public static final float DEFAULT_WIDTH = 64;
-    public static final float DEFAULT_HEIGHT = 80;
-    public static final float DEFAULT_SPEED = 400;
+    public static final float DEFAULT_WIDTH = 96;
+    public static final float DEFAULT_HEIGHT = 120;
+    public static final float DEFAULT_SPEED = 500;
 
     private float x;
     private float y;
@@ -52,7 +52,7 @@ public class Player {
         this.totalPoints = 0;
     }
 
-    // ── Position & Dimensions ──────────────────────────────────────
+
 
     public float getX() {
         return x;

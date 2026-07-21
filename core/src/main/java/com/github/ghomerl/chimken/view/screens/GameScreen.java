@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -18,98 +19,102 @@ import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Array;
 import com.github.ghomerl.chimken.controller.*;
 import com.github.ghomerl.chimken.controller.audio.MusicManager;
+import com.github.ghomerl.chimken.controller.audio.SfxManager;
 import com.github.ghomerl.chimken.model.User;
 import com.github.ghomerl.chimken.model.dao.UserDAO;
+import com.github.ghomerl.chimken.model.runlog.RunLog;
 import com.github.ghomerl.chimken.model.runlog.RunLogDAO;
 import com.github.ghomerl.chimken.model.KeyBindings;
 import com.github.ghomerl.chimken.model.entities.Player;
 import com.github.ghomerl.chimken.model.entities.enemies.Enemy;
-import com.github.ghomerl.chimken.model.entities.enemies.LevelFactory;
-import com.github.ghomerl.chimken.model.entities.enemies.SpawnEntry;
-import com.github.ghomerl.chimken.model.entities.enemies.Wave;
-import com.github.ghomerl.chimken.model.entities.enemies.WaveManager;
+import com.github.ghomerl.chimken.model.levels.LevelFactory;
+import com.github.ghomerl.chimken.model.entities.enemies.SniperChicken;
+import com.github.ghomerl.chimken.model.levels.SpawnEntry;
+import com.github.ghomerl.chimken.model.levels.Wave;
+import com.github.ghomerl.chimken.controller.WaveManager;
+import com.github.ghomerl.chimken.model.entities.enemies.bosses.Boss;
+import com.github.ghomerl.chimken.model.entities.enemies.bosses.Boss2;
 import com.github.ghomerl.chimken.model.entities.items.Item;
 import com.github.ghomerl.chimken.model.entities.projectiles.MissileProjectile;
 import com.github.ghomerl.chimken.model.entities.projectiles.Projectile;
 import com.github.ghomerl.chimken.model.entities.weapons.BoronRailgun;
 import com.github.ghomerl.chimken.view.assets.Assets;
+import com.github.ghomerl.chimken.view.renderers.BossRenderer;
 import com.github.ghomerl.chimken.view.renderers.ChickenRenderer;
 import com.github.ghomerl.chimken.view.renderers.EggProjectileRenderer;
+import com.github.ghomerl.chimken.view.renderers.ExplosionAnimation;
 import com.github.ghomerl.chimken.view.renderers.ItemRenderer;
+import com.github.ghomerl.chimken.view.renderers.MissileRenderer;
 import com.github.ghomerl.chimken.view.renderers.PlayerRenderer;
 import com.github.ghomerl.chimken.view.renderers.ProjectileRenderer;
 import com.github.ghomerl.chimken.view.renderers.SuperheatedMetalloidChunkRenderer;
 
 public class GameScreen extends AbstractScreen {
 
-    // ── Player ────────────────────────────────────────────────────
+    private static final boolean DEBUG_HITBOXES = false;
+
     private Player player;
     private PlayerController playerController;
     private PlayerRenderer playerRenderer;
     private ProjectileRenderer projectileRenderer;
 
-    // ── Enemies (dynamic per wave) ────────────────────────────────
     private final Array<Enemy> enemies = new Array<>();
     private final Array<ChickenController> chickenControllers = new Array<>();
 
-    // ── Wave system ───────────────────────────────────────────────
     private WaveManager waveManager;
     private Array<SpawnEntry> activeSpawns;
 
-    // ── Items ────────────────────────────────────────────────────
     private final Array<Item> items = new Array<>();
     private ItemRenderer itemRenderer;
     private SuperheatedMetalloidChunkRenderer chunkRenderer;
 
-    // ── Renderers ─────────────────────────────────────────────────
     private ChickenRenderer chickenRenderer;
     private EggProjectileRenderer eggProjectileRenderer;
+    private BossRenderer bossRenderer;
+    private MissileRenderer missileRenderer;
 
-    // ── Pause ─────────────────────────────────────────────────────
     private PauseController pauseController;
     private Table pauseOverlay;
     private Texture dimBgTexture;
     private Texture panelBgTexture;
 
-    // ── Shared ────────────────────────────────────────────────────
     private ShapeRenderer shapeRenderer;
 
-    // ── Re-entry guard ────────────────────────────────────────────
     private boolean initialized = false;
 
-    // ── Wave announcement ─────────────────────────────────────────
     private static final float WAVE_ANNOUNCE_DURATION = 3f;
     private boolean waveAnnouncementActive;
     private float waveAnnouncementTimer;
     private int announcedWaveNumber;
     private BitmapFont waveFont;
 
-    // ── HUD ───────────────────────────────────────────────────────
     private BitmapFont scoreFont;
     private BitmapFont hudFont;
 
-    // ── HUD icon textures ─────────────────────────────────────────
     private Texture iconHeart;
     private Texture iconMissile;
     private Texture iconLightning;
     private Texture iconFood;
 
-    // ── Missiles ──────────────────────────────────────────────────
     private final Array<MissileProjectile> missiles = new Array<>();
-    private static final float EXPLOSION_DURATION = 0.4f;
-    private static final float EXPLOSION_MAX_RADIUS = 350f;
-    private float explosionTimer;
-    private float explosionX, explosionY;
 
-    // ── Snake movement ────────────────────────────────────────────
+    private final Array<ExplosionAnimation> activeExplosions = new Array<>();
+    private static final float EXPLOSION_DURATION = 0.6f;
+    private static final float EXPLOSION_SIZE_MISSILE = 400f;
+    private static final float EXPLOSION_SIZE_PLAYER = 200f;
+
     private SnakeMovementController snakeController;
 
-    // ── Extra lives ───────────────────────────────────────────────
+    private ZigzagMovementController zigzagController;
+
+    private BossController bossController;
+
+    private BossController2 bossController2;
+
+    private final Array<SniperChickenController> sniperControllers = new Array<>();
+
     private int nextLifeThreshold;
 
-    // ══════════════════════════════════════════════════════════════
-    //  Lifecycle
-    // ══════════════════════════════════════════════════════════════
 
     @Override
     public void show() {
@@ -133,33 +138,32 @@ public class GameScreen extends AbstractScreen {
         }
     }
 
-    /**
-     * One-time setup: renderers, player, UI, pause overlay,
-     * and spawns the first wave.
-     */
+
     private void initGame() {
         shapeRenderer = new ShapeRenderer();
 
-        // ── Renderers ──────────────────────────────────────────────
+
         playerRenderer = new PlayerRenderer();
         projectileRenderer = new ProjectileRenderer();
         chickenRenderer = new ChickenRenderer();
         eggProjectileRenderer = new EggProjectileRenderer();
+        bossRenderer = new BossRenderer();
+        missileRenderer = new MissileRenderer();
         itemRenderer = new ItemRenderer();
         chunkRenderer = new SuperheatedMetalloidChunkRenderer();
 
-        // ── Fonts ──────────────────────────────────────────────────
+
         scoreFont = Assets.buildFont(36, "Bold");
         hudFont = Assets.buildFont(28, "Default");
         waveFont = Assets.buildFont(120, "Bold");
 
-        // ── HUD icon textures ──────────────────────────────────────
+
         iconHeart = Assets.iconHeart;
         iconMissile = Assets.iconMissile;
         iconLightning = Assets.iconPower;
         iconFood = Assets.iconFood;
 
-        // ── Player ────────────────────────────────────────────────
+
         KeyBindings kb = LoginMenuController.isLoggedIn()
             ? LoginMenuController.getCurrentUser().getKeyBindings()
             : new KeyBindings();
@@ -172,36 +176,35 @@ public class GameScreen extends AbstractScreen {
             worldViewport.getWorldHeight()
         );
 
-        // ── Pause controller ──────────────────────────────────────
+
         pauseController = new PauseController();
 
-        // ── Wave system (Level 1 + Level 2) ──────────────────────
         float ww = worldViewport.getWorldWidth();
         float wh = worldViewport.getWorldHeight();
         Array<Wave> allWaves = new Array<>();
         allWaves.addAll(LevelFactory.buildLevel1(ww, wh));
         allWaves.addAll(LevelFactory.buildLevel2(ww, wh));
+        allWaves.addAll(LevelFactory.buildLevel4(ww, wh));
+        allWaves.addAll(LevelFactory.buildLevel5(ww, wh));
+        allWaves.addAll(LevelFactory.buildLevel6(ww, wh));
+        allWaves.addAll(LevelFactory.buildLevel7(ww, wh));
+        allWaves.addAll(LevelFactory.buildLevel8(ww, wh));
+        allWaves.addAll(LevelFactory.buildLevel9(ww, wh));
+        allWaves.addAll(LevelFactory.buildLevel10(ww, wh));
+        allWaves.addAll(LevelFactory.buildLevel11(ww, wh));
         waveManager = new WaveManager(allWaves, allWaves.size - 1);
 
-        // ── Extra-life tracker ────────────────────────────────────
-        nextLifeThreshold = 10_000;
 
-        // ── UI: pause overlay only (no back button) ──────────────
+        nextLifeThreshold = 10000;
+
+
         createPauseOverlay();
 
-        // ── Spawn first wave (triggers announcement) ─────────────
+
         spawnNextWave();
     }
 
-    // ══════════════════════════════════════════════════════════════
-    //  Wave management
-    // ══════════════════════════════════════════════════════════════
 
-    /**
-     * Spawns all enemies of the next wave, creates their controllers,
-     * and stores the spawn entries for movement.  Also starts the
-     * wave-announcement timer.
-     */
     private void spawnNextWave() {
         // Dispose old enemies' weapons
         for (Enemy e : enemies) {
@@ -209,25 +212,69 @@ public class GameScreen extends AbstractScreen {
         }
         enemies.clear();
         chickenControllers.clear();
+        sniperControllers.clear();
         snakeController = null;
+        zigzagController = null;
+        bossController = null;
+        bossController2 = null;
 
         waveManager.spawnCurrentWave(enemies);
         activeSpawns = waveManager.getCurrentSpawns();
 
-        // Create a chicken controller for each enemy
+
+        boolean isBossWave = false;
+        boolean isBoss2Wave = false;
         for (Enemy e : enemies) {
-            chickenControllers.add(new ChickenController(e));
+            if (e instanceof Boss2) {
+                isBossWave = true;
+                isBoss2Wave = true;
+                bossController2 = new BossController2(
+                    (Boss2) e, enemies, sniperControllers, player);
+            } else if (e instanceof Boss) {
+                isBossWave = true;
+                bossController = new BossController((Boss) e);
+            } else if (e instanceof SniperChicken) {
+                sniperControllers.add(
+                    new SniperChickenController((SniperChicken) e, player)
+                );
+            } else {
+                chickenControllers.add(new ChickenController(e));
+            }
         }
 
-        // If the wave uses snake movement, create the controller
+        // If the wave uses snake or zigzag movement, create its controller
         Wave currentWave = waveManager.getCurrentWave();
-        if (currentWave != null
-            && currentWave.getMovementType() == Wave.MovementType.SNAKE) {
-            snakeController = new SnakeMovementController(
-                enemies,
-                worldViewport.getWorldWidth(),
-                worldViewport.getWorldHeight()
-            );
+        if (currentWave != null) {
+            switch (currentWave.getMovementType()) {
+                case SNAKE:
+                    snakeController = new SnakeMovementController(
+                        enemies,
+                        worldViewport.getWorldWidth(),
+                        worldViewport.getWorldHeight()
+                    );
+                    break;
+                case ZIGZAG:
+                    zigzagController = new ZigzagMovementController(enemies);
+                    break;
+                default:
+                    // FORMATION - handled by EnemyMovementController
+                    break;
+            }
+        }
+
+        // Boss waves get their own music; every other wave uses battle theme.
+        if (isBoss2Wave) {
+            MusicManager.stopBattleTheme();
+            MusicManager.stopBossFightTheme();
+            MusicManager.playBossFightTheme2();
+        } else if (isBossWave) {
+            MusicManager.stopBattleTheme();
+            MusicManager.stopBossFightTheme2();
+            MusicManager.playBossFightTheme();
+        } else {
+            MusicManager.stopBossFightTheme();
+            MusicManager.stopBossFightTheme2();
+            MusicManager.playBattleTheme();
         }
 
         // Start wave announcement
@@ -236,27 +283,23 @@ public class GameScreen extends AbstractScreen {
         announcedWaveNumber = waveManager.getCurrentWaveNumber();
     }
 
-    /**
-     * Returns the current Wave object (convenience).
-     */
+
     private Wave getCurrentWave() {
         return waveManager.getCurrentWave();
     }
 
-    /**
-     * Called when all enemies of the current wave are dead.
-     * Either advances to the next wave or triggers the win screen.
-     */
+
     private void onWaveCleared() {
         if (waveManager.wasLastWave()) {
-            // Level complete — player wins
+            // Level complete - player wins
             MusicManager.stopBattleTheme();
+            MusicManager.stopBossFightTheme();
+            MusicManager.stopBossFightTheme2();
             MusicManager.playVictoryTheme();
             saveRunResults(true);
             ScreenManager.setScreen(new WinScreen(
                 player.getTotalPoints(),
                 player.getKillCount(),
-                player.getDeathCount(),
                 player.getKeysObtained()
             ));
             return;
@@ -268,9 +311,6 @@ public class GameScreen extends AbstractScreen {
         }
     }
 
-    // ══════════════════════════════════════════════════════════════
-    //  Input
-    // ══════════════════════════════════════════════════════════════
 
     private void reAddInputProcessors() {
         InputMultiplexer multiplexer = (InputMultiplexer) Gdx.input.getInputProcessor();
@@ -280,9 +320,6 @@ public class GameScreen extends AbstractScreen {
         }
     }
 
-    // ══════════════════════════════════════════════════════════════
-    //  Pause overlay
-    // ══════════════════════════════════════════════════════════════
 
     private void createPauseOverlay() {
         Pixmap dimPx = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
@@ -355,9 +392,6 @@ public class GameScreen extends AbstractScreen {
         }
     }
 
-    // ══════════════════════════════════════════════════════════════
-    //  Render
-    // ══════════════════════════════════════════════════════════════
 
     @Override
     public void render(float delta) {
@@ -380,7 +414,9 @@ public class GameScreen extends AbstractScreen {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         drawWorldFilled();
+        drawBoss();
         drawWorldDebug();
+        drawExplosion();
 
         drawHUD();
 
@@ -390,7 +426,6 @@ public class GameScreen extends AbstractScreen {
     }
 
     private void renderGameFrame(float delta) {
-        // ── Tick wave-announcement timer (non-blocking) ────────────
         if (waveAnnouncementActive) {
             waveAnnouncementTimer -= delta;
             if (waveAnnouncementTimer <= 0f) {
@@ -398,65 +433,83 @@ public class GameScreen extends AbstractScreen {
             }
         }
 
-        // ── Update player (always, even during announcement) ───────
         playerController.update(delta);
 
-        // ── Enemy movement — ONLY when announcement is over ────────
         if (!waveAnnouncementActive) {
             Wave wave = getCurrentWave();
-            if (wave != null && wave.getMovementType() == Wave.MovementType.SNAKE) {
-                if (snakeController != null) snakeController.update(delta);
-            } else {
-                EnemyMovementController.update(activeSpawns, delta);
+            if (wave != null) {
+                switch (wave.getMovementType()) {
+                    case SNAKE:
+                        if (snakeController != null) snakeController.update(delta);
+                        break;
+                    case ZIGZAG:
+                        if (zigzagController != null) zigzagController.update(delta);
+                        break;
+                    default:
+                        EnemyMovementController.update(activeSpawns, delta);
+                        break;
+                }
             }
 
-            // Enemy AI (firing) — only when chickens are active
+            // Enemy AI (firing) - only when chickens are active
             for (ChickenController cc : chickenControllers) {
                 cc.update(delta);
             }
+            for (SniperChickenController sc : sniperControllers) {
+                sc.update(delta);
+            }
+            if (bossController != null) {
+                bossController.update(delta);
+            }
+            if (bossController2 != null) {
+                bossController2.update(delta);
+            }
         }
 
-        // ── Items (always active) ─────────────────────────────────
         ItemController.update(items, player, delta);
 
-        // ── Missiles (always active) ──────────────────────────────
         updateMissiles(delta);
 
-        // ── Explosion visual timer ────────────────────────────────
-        if (explosionTimer > 0f) {
-            explosionTimer -= delta;
+        for (int i = activeExplosions.size - 1; i >= 0; i--) {
+            ExplosionAnimation ex = activeExplosions.get(i);
+            ex.update(delta);
+            if (ex.isFinished()) {
+                activeExplosions.removeIndex(i);
+            }
         }
 
-        // ── Collision detection (always active) ────────────────────
         if (!playerController.isPlayerDead()) {
             resolveCollisions();
         }
 
-        // ── Extra-life check (always active) ───────────────────────
         checkExtraLife();
 
-        // ── Death check (always active) ────────────────────────────
         if (playerController.isPlayerDead()) {
             MusicManager.stopBattleTheme();
+            MusicManager.stopBossFightTheme();
+            MusicManager.stopBossFightTheme2();
+
             saveRunResults(false);
             ScreenManager.setScreen(new GameOverScreen(player.getTotalPoints()));
             return;
         }
 
-        // ── Wave cleared check ─────────────────────────────────────
+
         if (waveManager.isCurrentWaveCleared()) {
             onWaveCleared();
             return;
         }
 
-        // ── Draw ───────────────────────────────────────────────────
+
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         drawWorldFilled();
+        drawBoss();
         drawWorldDebug();
         drawExplosion();
         drawHUD();
+        drawBossHealthBar();
         drawWaveAnnouncement();
 
         uiViewport.apply();
@@ -464,42 +517,58 @@ public class GameScreen extends AbstractScreen {
         stage.draw();
     }
 
-    // ── World drawing helpers ──────────────────────────────────────
+
 
     private void drawWorldFilled() {
         worldViewport.apply();
-        shapeRenderer.setProjectionMatrix(worldCamera.combined);
 
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
 
-        playerRenderer.render(shapeRenderer, player);
-        renderPlayerProjectiles(shapeRenderer);
+        batch.setProjectionMatrix(worldCamera.combined);
+        batch.begin();
 
-        for (Enemy e : enemies) {
-            if (e.isAlive()) chickenRenderer.render(shapeRenderer, e);
+
+        if (Assets.backgroundTexture != null) {
+            batch.draw(Assets.backgroundTexture,
+                0f, 0f,
+                worldViewport.getWorldWidth(),
+                worldViewport.getWorldHeight());
         }
 
+        // 1) Player spaceship
+        playerRenderer.render(batch, player);
+
+        // 2) Player projectiles (plasma or boron depending on weapon)
+        renderPlayerProjectiles();
+
+        // 3) Non-boss enemies (chickens of all types)
+        for (Enemy e : enemies) {
+            if (!e.isAlive()) continue;
+            if (e instanceof Boss) continue;
+            chickenRenderer.render(batch, e);
+        }
+
+        // 4) Enemy egg projectiles
         for (Enemy e : enemies) {
             if (e.getWeapon() != null) {
-                eggProjectileRenderer.render(shapeRenderer, e.getWeapon().getProjectiles());
+                eggProjectileRenderer.render(batch, e.getWeapon().getProjectiles());
             }
         }
 
+        // 5) In-flight missiles
+        missileRenderer.render(batch, missiles);
+
+        batch.end();
+
+        // Shapes (mostly items)
+        shapeRenderer.setProjectionMatrix(worldCamera.combined);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
         itemRenderer.render(shapeRenderer, items);
-
-        // Missiles
-        for (MissileProjectile m : missiles) {
-            if (m.hasExploded()) continue;
-            shapeRenderer.setColor(Color.ORANGE);
-            shapeRenderer.rect(m.getX() - 6, m.getY() - 14, 12, 28);
-            shapeRenderer.setColor(Color.YELLOW);
-            shapeRenderer.rect(m.getX() - 3, m.getY() - 10, 6, 20);
-        }
-
         shapeRenderer.end();
     }
 
     private void drawWorldDebug() {
+        if (!DEBUG_HITBOXES) return;
+
         shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
 
         shapeRenderer.setColor(Color.RED);
@@ -510,7 +579,16 @@ public class GameScreen extends AbstractScreen {
 
         shapeRenderer.setColor(Color.YELLOW);
         for (Enemy e : enemies) {
-            if (e.isAlive()) chickenRenderer.renderDebug(shapeRenderer, e);
+            if (!e.isAlive()) continue;
+            if (e instanceof Boss) continue;
+            chickenRenderer.renderDebug(shapeRenderer, e);
+        }
+
+        shapeRenderer.setColor(Color.YELLOW);
+        for (Enemy e : enemies) {
+            if (e instanceof Boss) {
+                bossRenderer.renderDebug(shapeRenderer, e);
+            }
         }
 
         shapeRenderer.setColor(Color.ORANGE);
@@ -523,39 +601,55 @@ public class GameScreen extends AbstractScreen {
         shapeRenderer.setColor(Color.MAGENTA);
         itemRenderer.renderDebug(shapeRenderer, items);
 
+        shapeRenderer.setColor(Color.ORANGE);
+        missileRenderer.renderDebug(shapeRenderer, missiles);
+
         shapeRenderer.end();
     }
 
-    // ── Explosion effect ──────────────────────────────────────────
 
-    private void drawExplosion() {
-        if (explosionTimer <= 0f) return;
+    private void drawBoss() {
+        Boss boss = null;
+        for (Enemy e : enemies) {
+            if (e instanceof Boss) {
+                boss = (Boss) e;
+                break;
+            }
+        }
+        if (boss == null) return;
 
         worldViewport.apply();
-        shapeRenderer.setProjectionMatrix(worldCamera.combined);
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-
-        float progress = 1f - explosionTimer / EXPLOSION_DURATION;
-        float radius = progress * EXPLOSION_MAX_RADIUS;
-        float alpha = 1f - progress;
-
-        // Outer ring
-        shapeRenderer.setColor(1f, 0.6f, 0f, alpha * 0.4f);
-        shapeRenderer.circle(explosionX, explosionY, radius);
-
-        // Inner core
-        shapeRenderer.setColor(1f, 1f, 0.6f, alpha * 0.6f);
-        shapeRenderer.circle(explosionX, explosionY, radius * 0.5f);
-
-        shapeRenderer.end();
+        batch.setProjectionMatrix(worldCamera.combined);
+        batch.begin();
+        bossRenderer.render(batch, boss);
+        batch.end();
     }
 
-    // ── HUD ───────────────────────────────────────────────────────
+
+    private void spawnExplosion(float x, float y, float size) {
+        activeExplosions.add(new ExplosionAnimation(
+            x, y, EXPLOSION_DURATION, size));
+    }
+
+
+    private void drawExplosion() {
+        if (activeExplosions.size == 0) return;
+
+        worldViewport.apply();
+        batch.setProjectionMatrix(worldCamera.combined);
+        batch.begin();
+        for (ExplosionAnimation ex : activeExplosions) {
+            ex.render(batch);
+        }
+        batch.end();
+    }
+
+
 
     private void drawHUD() {
         uiViewport.apply();
 
-        // ── Semi-transparent panel (ShapeRenderer) ─────────────────
+
         Gdx.gl.glEnable(GL20.GL_BLEND);
         shapeRenderer.setProjectionMatrix(uiCamera.combined);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
@@ -566,11 +660,11 @@ public class GameScreen extends AbstractScreen {
 
         shapeRenderer.end();
 
-        // ── Icons + text labels (SpriteBatch) ─────────────────────
+        // Icons, Text labels
         batch.setProjectionMatrix(uiCamera.combined);
         batch.begin();
 
-        // Row positions (bottom-up, 42px apart)
+
         float row0y = 176;  // Hearts
         float row1y = 134;  // Missiles
         float row2y = 92;   // Lightning / weapon level
@@ -579,13 +673,13 @@ public class GameScreen extends AbstractScreen {
         float iconSize = 28f;
         float iconX = 28f;
 
-        // 1) Heart icon — health
+        // 1) Heart icon - health
         batch.draw(iconHeart, iconX, row0y - iconSize / 2f, iconSize, iconSize);
-        // 2) Missile icon — missile count
+        // 2) Missile icon - missile count
         batch.draw(iconMissile, iconX, row1y - iconSize / 2f, iconSize, iconSize);
-        // 3) Lightning icon — weapon level
+        // 3) Lightning icon - weapon level
         batch.draw(iconLightning, iconX, row2y - iconSize / 2f, iconSize, iconSize);
-        // 4) Food icon — food amount
+        // 4) Food icon - food amount
         batch.draw(iconFood, iconX, row3y - iconSize / 2f, iconSize, iconSize);
 
         hudFont.setColor(Color.WHITE);
@@ -594,14 +688,80 @@ public class GameScreen extends AbstractScreen {
         hudFont.draw(batch, String.valueOf(player.getWeaponLevel()), 64, row2y + 8);
         hudFont.draw(batch, String.valueOf(player.getFoodObtained()), 64, row3y + 8);
 
-        // Score — top-left
+        // Score - top-left
         scoreFont.setColor(Color.WHITE);
         scoreFont.draw(batch, "SCORE  " + player.getTotalPoints(), 20, 1060);
 
         batch.end();
     }
 
-    // ── Wave announcement ─────────────────────────────────────────
+
+
+    private void drawBossHealthBar() {
+        // Find the live boss, if any.
+        Boss boss = null;
+        for (Enemy e : enemies) {
+            if (e instanceof Boss && e.isAlive()) {
+                boss = (Boss) e;
+                break;
+            }
+        }
+        if (boss == null) return;
+
+        uiViewport.apply();
+        Gdx.gl.glEnable(GL20.GL_BLEND);
+
+        float barWidth = 1200f;
+        float barHeight = 28f;
+        float barX = (uiViewport.getWorldWidth() - barWidth) / 2f;
+        float barY = 1014f;   // top of the screen, below the score row
+
+        int hp = boss.getHp();
+        int maxHp = boss.getMaxHp();
+        if (maxHp <= 0) maxHp = 1;
+        float fillRatio = Math.max(0f, Math.min(1f, (float) hp / (float) maxHp));
+        float fillWidth = barWidth * fillRatio;
+
+
+        shapeRenderer.setProjectionMatrix(uiCamera.combined);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+
+
+        shapeRenderer.setColor(0f, 0f, 0f, 0.7f);
+        shapeRenderer.rect(barX - 6f, barY - 6f, barWidth + 12f, barHeight + 12f);
+
+
+        shapeRenderer.setColor(0.3f, 0.05f, 0.05f, 1f);
+        shapeRenderer.rect(barX, barY, barWidth, barHeight);
+
+
+        float r = 1f;
+        float g = 0.2f * fillRatio;
+        float b = 0.2f * fillRatio;
+        shapeRenderer.setColor(r, g, b, 1f);
+        shapeRenderer.rect(barX, barY, fillWidth, barHeight);
+
+        shapeRenderer.end();
+
+
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+        shapeRenderer.setColor(1f, 1f, 1f, 0.85f);
+        shapeRenderer.rect(barX, barY, barWidth, barHeight);
+        shapeRenderer.end();
+
+        // Label (SpriteBatch)
+        batch.setProjectionMatrix(uiCamera.combined);
+        batch.begin();
+        hudFont.setColor(Color.WHITE);
+        String label = "BOSS  " + hp + " / " + maxHp;
+        com.badlogic.gdx.graphics.g2d.GlyphLayout layout =
+            new com.badlogic.gdx.graphics.g2d.GlyphLayout(hudFont, label);
+        hudFont.draw(batch, label,
+            (uiViewport.getWorldWidth() - layout.width) / 2f,
+            barY - 12f);
+        batch.end();
+    }
+
 
     private void drawWaveAnnouncement() {
         if (!waveAnnouncementActive) return;
@@ -626,9 +786,6 @@ public class GameScreen extends AbstractScreen {
         waveFont.getColor().a = 1f; // reset
     }
 
-    // ══════════════════════════════════════════════════════════════
-    //  Missile logic
-    // ══════════════════════════════════════════════════════════════
 
     private void updateMissiles(float delta) {
         // Check if the player requested a missile this frame
@@ -654,16 +811,21 @@ public class GameScreen extends AbstractScreen {
                     if (e.isAlive()) {
                         e.takeDamage(2500);
                         if (!e.isAlive()) {
+                            // Per-enemy death SFX + points + drops
+                            if (e instanceof Boss) {
+                                SfxManager.playBossDeath();
+                            } else {
+                                SfxManager.playChickenDeath();
+                            }
                             awardKillPoints(e);
                             DropController.rollDrops(e, player, items,
                                 worldViewport.getWorldWidth());
                         }
                     }
                 }
-                // Start explosion visual
-                explosionTimer = EXPLOSION_DURATION;
-                explosionX = m.getX();
-                explosionY = m.getY();
+                // Spawn explosion animation + SFX at the detonation point
+                spawnExplosion(m.getX(), m.getY(), EXPLOSION_SIZE_MISSILE);
+                SfxManager.playMissileExplosion();
                 missiles.removeIndex(i);
             } else if (!m.isActive()) {
                 missiles.removeIndex(i);
@@ -671,9 +833,6 @@ public class GameScreen extends AbstractScreen {
         }
     }
 
-    // ══════════════════════════════════════════════════════════════
-    //  Extra-life logic
-    // ══════════════════════════════════════════════════════════════
 
     private void checkExtraLife() {
         if (player.getTotalPoints() >= nextLifeThreshold) {
@@ -682,23 +841,32 @@ public class GameScreen extends AbstractScreen {
         }
     }
 
-    // ══════════════════════════════════════════════════════════════
-    //  Collision resolution
-    // ══════════════════════════════════════════════════════════════
 
     private void resolveCollisions() {
-        // 1) Player body <-> Enemy body
+        // 1) Player body , Enemy body
         for (Enemy e : enemies) {
             if (CollisionController.checkPlayerEnemyCollision(player, e)) {
                 playerController.onPlayerHit(PlayerController.RESPAWN_RISE);
-                e.takeDamage(e.getHp());
-                awardKillPoints(e);
-                DropController.rollDrops(e, player, items, worldViewport.getWorldWidth());
+                // Explosion + SFX on the player for every body-collision hit.
+                spawnExplosion(
+                    player.getX() + player.getWidth() * 0.5f,
+                    player.getY() + player.getHeight() * 0.5f,
+                    EXPLOSION_SIZE_PLAYER);
+                SfxManager.playPlayerDeath();
+                if (!(e instanceof Boss)) {
+                    e.takeDamage(e.getHp());
+                    // Enemy died from body collision - play death SFX
+                    if (!e.isAlive()) {
+                        SfxManager.playChickenDeath();
+                    }
+                    awardKillPoints(e);
+                    DropController.rollDrops(e, player, items, worldViewport.getWorldWidth());
+                }
                 break;
             }
         }
 
-        // 2) Enemy egg <-> Player
+        // 2) Enemy egg , Player
         if (CollisionController.canPlayerCollide(player)) {
             boolean playerWasHit = false;
             for (Enemy e : enemies) {
@@ -710,6 +878,12 @@ public class GameScreen extends AbstractScreen {
                     if (CollisionController.checkProjectilePlayerCollision(p, player)) {
                         p.setActive(false);
                         playerController.onPlayerHit(PlayerController.RESPAWN_TELEPORT);
+                        // Explosion + SFX on the player for every egg hit.
+                        spawnExplosion(
+                            player.getX() + player.getWidth() * 0.5f,
+                            player.getY() + player.getHeight() * 0.5f,
+                            EXPLOSION_SIZE_PLAYER);
+                        SfxManager.playPlayerDeath();
                         playerWasHit = true;
                         break;
                     }
@@ -717,7 +891,7 @@ public class GameScreen extends AbstractScreen {
             }
         }
 
-        // 3) Player projectile <-> Enemy
+        // 3) Player projectile , Enemy
         Array<Projectile> plasmas = player.getWeapon().getProjectiles();
         for (int i = plasmas.size - 1; i >= 0; i--) {
             Projectile p = plasmas.get(i);
@@ -727,6 +901,12 @@ public class GameScreen extends AbstractScreen {
                     p.setActive(false);
                     e.takeDamage(p.getDamage());
                     if (!e.isAlive()) {
+                        // Enemy died from player projectile - play death SFX
+                        if (e instanceof Boss) {
+                            SfxManager.playBossDeath();
+                        } else {
+                            SfxManager.playChickenDeath();
+                        }
                         awardKillPoints(e);
                         DropController.rollDrops(e, player, items, worldViewport.getWorldWidth());
                     }
@@ -736,12 +916,12 @@ public class GameScreen extends AbstractScreen {
         }
     }
 
-    private void renderPlayerProjectiles(ShapeRenderer r) {
+    private void renderPlayerProjectiles() {
         Array<Projectile> projs = player.getWeapon().getProjectiles();
         if (player.getWeapon() instanceof BoronRailgun) {
-            chunkRenderer.render(r, projs);
+            chunkRenderer.render(batch, projs);
         } else {
-            projectileRenderer.render(r, projs);
+            projectileRenderer.render(batch, projs);
         }
     }
 
@@ -759,36 +939,26 @@ public class GameScreen extends AbstractScreen {
         player.setKillCount(player.getKillCount() + 1);
     }
 
-    /**
-     * Persists the results of a completed run:
-     * <ul>
-     *   <li>Saves high-score, kills, keys, and win flag via {@link UserDAO}</li>
-     *   <li>Appends a run-log entry to {@code chimken_run_logs.json}</li>
-     * </ul>
-     * Skips the user-stats update if no user is logged in, but
-     * always logs the run.
-     *
-     * @param won {@code true} if the player cleared the level
-     */
+
     private void saveRunResults(boolean won) {
         int score = player.getTotalPoints();
         int kills = player.getKillCount();
         int keys  = player.getKeysObtained();
         int lastLevel = waveManager.getCurrentWaveNumber();
 
-        // Persist user statistics (high-score, kills, keys, wins)
+        int userId = RunLog.NO_USER;
+
+
         if (LoginMenuController.isLoggedIn()) {
             User user = LoginMenuController.getCurrentUser();
+            userId = user.getId();
             new UserDAO().updateRunResults(user, score, kills, keys, won);
         }
 
-        // Always log the run to the JSON log file
-        RunLogDAO.logRun(score, lastLevel);
+        // Always log the run to the JSON log file, recording who was playing
+        RunLogDAO.logRun(userId, score, lastLevel);
     }
 
-    // ══════════════════════════════════════════════════════════════
-    //  Screen lifecycle
-    // ══════════════════════════════════════════════════════════════
 
     @Override
     public void resize(int width, int height) {

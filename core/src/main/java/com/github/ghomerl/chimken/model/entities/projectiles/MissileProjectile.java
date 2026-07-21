@@ -1,13 +1,6 @@
 package com.github.ghomerl.chimken.model.entities.projectiles;
 
-/**
- * A player-fired missile that travels toward the centre of the
- * screen and then detonates, dealing massive area-of-effect damage
- * to every enemy.
- * <p>
- * Does <b>not</b> participate in collision detection — the
- * explosion is handled directly by the game screen.
- */
+
 public class MissileProjectile {
 
     private static final float SPEED = 800f;
@@ -28,11 +21,7 @@ public class MissileProjectile {
         this.targetY = targetY;
     }
 
-    /**
-     * Moves the missile toward the target.  Once it arrives the
-     * missile is marked as {@link #hasExploded() exploded} and
-     * the caller should trigger the area-of-effect damage.
-     */
+
     public void update(float delta) {
         if (exploded || !active) return;
 
@@ -51,7 +40,6 @@ public class MissileProjectile {
         }
     }
 
-    // ── Accessors ──────────────────────────────────────────────────
 
     public float getX() { return x; }
     public float getY() { return y; }

@@ -2,10 +2,7 @@ package com.github.ghomerl.chimken.model.entities.weapons;
 
 import com.github.ghomerl.chimken.model.entities.projectiles.EggProjectile;
 
-/**
- * Fires two {@link EggProjectile}s side-by-side straight down.
- * Used by the double-egg chicken enemy.
- */
+
 public class DoubleEggThrower extends Weapon {
 
     private static final float FIRE_RATE = 0.1f;

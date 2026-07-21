@@ -3,10 +3,7 @@ package com.github.ghomerl.chimken.model.entities.weapons;
 import com.github.ghomerl.chimken.model.entities.projectiles.SuperheatedMetalloidChunk;
 import com.github.ghomerl.chimken.model.entities.weapons.enums.WeaponType;
 
-/**
- * Powerful but slow-firing railgun that launches
- * {@link SuperheatedMetalloidChunk} projectiles.
- */
+
 public class BoronRailgun extends Weapon {
 
     private static final float FIRE_RATE = 0.6f;

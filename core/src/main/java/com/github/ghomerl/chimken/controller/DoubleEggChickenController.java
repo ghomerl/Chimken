@@ -4,14 +4,10 @@ import com.github.ghomerl.chimken.model.entities.enemies.DoubleEggChicken;
 
 import java.util.Random;
 
-/**
- * Controls a {@link DoubleEggChicken}: each frame there is a
- * {@value #FIRE_CHANCE_DENOMINATOR}-in-1 probability of firing
- * two eggs side-by-side straight down.
- */
+
 public class DoubleEggChickenController {
 
-    private static final int FIRE_CHANCE_DENOMINATOR = 246;
+    private static final int FIRE_CHANCE_DENOMINATOR = 360;
 
     private final DoubleEggChicken enemy;
     private final Random random = new Random();
@@ -20,10 +16,7 @@ public class DoubleEggChickenController {
         this.enemy = enemy;
     }
 
-    /**
-     * Rolls the dice and, on a hit, tells the weapon to fire a double
-     * volley downward.  Also ticks the weapon's projectile list.
-     */
+
     public void update(float delta) {
         if (!enemy.isAlive()) {
             enemy.getWeapon().update(delta);

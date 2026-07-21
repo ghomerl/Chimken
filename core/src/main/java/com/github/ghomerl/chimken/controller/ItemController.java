@@ -1,28 +1,19 @@
 package com.github.ghomerl.chimken.controller;
 
-import com.badlogic.gdx.math.Rectangle;
+import com.github.ghomerl.chimken.controller.audio.SfxManager;
 import com.github.ghomerl.chimken.model.entities.Player;
 import com.github.ghomerl.chimken.model.entities.items.*;
 import com.github.ghomerl.chimken.model.entities.weapons.WeaponFactory;
 import com.github.ghomerl.chimken.model.entities.weapons.enums.WeaponType;
 import com.badlogic.gdx.utils.Array;
 
-/**
- * Updates all active items (movement, lifetime) and handles
- * player ↔ item collisions (collection).
- */
+
 public final class ItemController {
 
     private ItemController() {
     }
 
-    /**
-     * Updates every item, removes expired ones, and checks for
-     * player collection.
-     *
-     * @param items  the live item list (modified in-place)
-     * @param player the player model
-     */
+
     public static void update(Array<Item> items, Player player, float delta) {
         for (int i = items.size - 1; i >= 0; i--) {
             Item item = items.get(i);
@@ -67,15 +58,15 @@ public final class ItemController {
 
         if (item instanceof PowerUpItem) {
             player.setWeaponLevel(player.getWeaponLevel() + 1);
+            SfxManager.playPowerup();
         } else if (item instanceof GiftItem) {
             WeaponType type = ((GiftItem) item).getWeaponType();
-            // If the player already has this weapon type, level it up
-            // instead of replacing it with a fresh level-1 copy.
             if (player.getWeapon().getWeaponType() == type) {
                 player.setWeaponLevel(player.getWeaponLevel() + 1);
             } else {
                 player.setWeapon(WeaponFactory.create(type));
             }
+            SfxManager.playGift();
         }
     }
 }

@@ -1,10 +1,7 @@
 package com.github.ghomerl.chimken.controller;
 
 import com.badlogic.gdx.Gdx;
-import com.github.ghomerl.chimken.view.screens.LoginMenuScreen;
-import com.github.ghomerl.chimken.view.screens.MainMenuScreen;
-import com.github.ghomerl.chimken.view.screens.PreGameMenuScreen;
-import com.github.ghomerl.chimken.view.screens.SettingsScreen;
+import com.github.ghomerl.chimken.view.screens.*;
 
 public class MainMenuController {
 
@@ -20,6 +17,11 @@ public class MainMenuController {
         ScreenManager.setScreen(new PreGameMenuScreen());
         return null;
     }
+
+    public static void openLeaderboard() {
+        ScreenManager.setScreen(new LeaderboardScreen());
+    }
+
 
 
     public static String openSettings() {

@@ -1,54 +1,40 @@
 package com.github.ghomerl.chimken.controller;
 
 import com.badlogic.gdx.InputAdapter;
+import com.github.ghomerl.chimken.controller.audio.SfxManager;
 import com.github.ghomerl.chimken.model.KeyBindings;
 import com.github.ghomerl.chimken.model.entities.Player;
+import com.github.ghomerl.chimken.model.entities.weapons.BoronRailgun;
+import com.github.ghomerl.chimken.model.entities.weapons.PlasmaBlaster;
 
-/**
- * Handles all player-related input, game-logic updates, and
- * hit-respawn state management.
- * <p>
- * Implements {@link InputAdapter} so it can be registered as an
- * {@link com.badlogic.gdx.InputProcessor} in the game screen's
- * {@link com.badlogic.gdx.InputMultiplexer}.
- * <p>
- * The controller drives a four-state machine:
- * <ol>
- *   <li>{@link State#NORMAL}     — full control, vulnerable</li>
- *   <li>{@link State#HIT_WAIT}   — invisible, waiting 0.5 s</li>
- *   <li>{@link State#RESPAWNING} — rising from below the screen</li>
- *   <li>{@link State#INVINCIBLE} — blinking, can move/shoot, invulnerable</li>
- * </ol>
- */
+
 public class PlayerController extends InputAdapter {
 
-    // ── Respawn type ────────────────────────────────────────────────
-    /** Rises from y = −height up to y = 0. */
+
     public static final int RESPAWN_RISE = 0;
-    /** Teleports to the starting square. */
     public static final int RESPAWN_TELEPORT = 1;
 
-    // ── Internal states ─────────────────────────────────────────────
+
     private enum State { NORMAL, HIT_WAIT, RESPAWNING, INVINCIBLE }
 
-    // ── Timing constants ────────────────────────────────────────────
+
     private static final float HIT_WAIT_DURATION   = 0.5f;
     private static final float RESPAWN_RISE_SPEED  = 600f;
     private static final float INVINCIBLE_DURATION = 2f;
     private static final float SPAWN_Y             = 100f;
 
-    // ── References ──────────────────────────────────────────────────
+
     private final Player player;
     private final float worldWidth;
     private final float worldHeight;
 
-    // ── State machine ───────────────────────────────────────────────
+
     private State state = State.NORMAL;
     private float stateTimer;
     private boolean playerDead;
     private int respawnType;
 
-    // ── Tracked key states ──────────────────────────────────────────
+
     private boolean upPressed;
     private boolean downPressed;
     private boolean leftPressed;
@@ -56,21 +42,17 @@ public class PlayerController extends InputAdapter {
     private boolean attackPressed;
     private boolean missilePressed;
 
-    /** Set to {@code true} once per frame when the missile key is pressed. */
+
     private boolean missileRequested;
 
-    /**
-     * @param player      the player model to control
-     * @param worldWidth  the horizontal extent of the game world (viewport)
-     * @param worldHeight the vertical extent of the game world (viewport)
-     */
+
     public PlayerController(Player player, float worldWidth, float worldHeight) {
         this.player = player;
         this.worldWidth = worldWidth;
         this.worldHeight = worldHeight;
     }
 
-    // ── InputProcessor ─────────────────────────────────────────────
+
 
     @Override
     public boolean keyDown(int keycode) {
@@ -84,14 +66,7 @@ public class PlayerController extends InputAdapter {
         return false;
     }
 
-    // ── Hit / Death API ────────────────────────────────────────────
 
-    /**
-     * Called when the player takes damage.
-     *
-     * @param respawnType {@link #RESPAWN_RISE} (body collision) or
-     *                   {@link #RESPAWN_TELEPORT} (egg hit)
-     */
     public void onPlayerHit(int respawnType) {
         player.setHp(player.getHp() - 1);
         player.setVisible(false);
@@ -101,28 +76,19 @@ public class PlayerController extends InputAdapter {
         stateTimer = HIT_WAIT_DURATION;
     }
 
-    /**
-     * @return {@code true} once the 0.5 s hit-wait expires and HP ≤ 0.
-     *         The game screen should switch to {@code GameOverScreen}
-     *         and <b>not</b> call {@link #update(float)} again.
-     */
+
     public boolean isPlayerDead() {
         return playerDead;
     }
 
-    // ── Missile request API ───────────────────────────────────────
 
-    /**
-     * @return {@code true} if the player pressed the missile key
-     *         this frame (consumed on read).
-     */
     public boolean consumeMissileRequest() {
         boolean r = missileRequested;
         missileRequested = false;
         return r;
     }
 
-    // ── Per-frame update ───────────────────────────────────────────
+
 
     public void update(float delta) {
         missileRequested = false;
@@ -172,7 +138,7 @@ public class PlayerController extends InputAdapter {
         }
     }
 
-    // ── Private helpers ────────────────────────────────────────────
+
 
     private void beginRespawn() {
         if (respawnType == RESPAWN_TELEPORT) {
@@ -197,7 +163,7 @@ public class PlayerController extends InputAdapter {
 
     private void updateKeyState(int keycode, boolean pressed) {
         KeyBindings kb = player.getKeyBindings();
-        if      (keycode == kb.getUp())          upPressed    = pressed;
+        if (keycode == kb.getUp())          upPressed    = pressed;
         else if (keycode == kb.getDown())        downPressed  = pressed;
         else if (keycode == kb.getLeft())        leftPressed  = pressed;
         else if (keycode == kb.getRight())       rightPressed = pressed;
@@ -224,12 +190,21 @@ public class PlayerController extends InputAdapter {
 
     private void applyShooting() {
         if (attackPressed) {
+            int before = player.getWeapon().getProjectiles().size;
             player.getWeapon().fireLeveled(
                 player.getX() + player.getWidth() * 0.5f,
                 player.getY() + player.getHeight(),
                 1f,
                 player.getWeaponLevel()
             );
+            int after = player.getWeapon().getProjectiles().size;
+            if (after > before) {
+                if (player.getWeapon() instanceof BoronRailgun) {
+                    SfxManager.playBoronShot();
+                } else if (player.getWeapon() instanceof PlasmaBlaster) {
+                    SfxManager.playPlasmaShot();
+                }
+            }
         }
     }
 
