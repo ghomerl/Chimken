@@ -604,6 +604,8 @@ public class GameScreen extends AbstractScreen {
     // ── Wave announcement ─────────────────────────────────────────
 
     private void drawWaveAnnouncement() {
+        if (!waveAnnouncementActive) return;
+
         uiViewport.apply();
         batch.setProjectionMatrix(uiCamera.combined);
         batch.begin();

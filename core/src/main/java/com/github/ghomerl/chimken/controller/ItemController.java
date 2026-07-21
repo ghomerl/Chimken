@@ -69,7 +69,13 @@ public final class ItemController {
             player.setWeaponLevel(player.getWeaponLevel() + 1);
         } else if (item instanceof GiftItem) {
             WeaponType type = ((GiftItem) item).getWeaponType();
-            player.setWeapon(WeaponFactory.create(type));
+            // If the player already has this weapon type, level it up
+            // instead of replacing it with a fresh level-1 copy.
+            if (player.getWeapon().getWeaponType() == type) {
+                player.setWeaponLevel(player.getWeaponLevel() + 1);
+            } else {
+                player.setWeapon(WeaponFactory.create(type));
+            }
         }
     }
 }

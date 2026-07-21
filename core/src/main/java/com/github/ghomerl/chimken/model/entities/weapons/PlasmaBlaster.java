@@ -1,6 +1,7 @@
 package com.github.ghomerl.chimken.model.entities.weapons;
 
 import com.github.ghomerl.chimken.model.entities.projectiles.PlasmaLaserProjectile;
+import com.github.ghomerl.chimken.model.entities.weapons.enums.WeaponType;
 
 /**
  * Rapid-fire plasma blaster — the default weapon equipped by the player.
@@ -15,6 +16,11 @@ public class PlasmaBlaster extends Weapon {
 
     public PlasmaBlaster() {
         super(FIRE_RATE);
+    }
+
+    @Override
+    public WeaponType getWeaponType() {
+        return WeaponType.PLASMA_BLASTER;
     }
 
     @Override
