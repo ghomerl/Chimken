@@ -21,8 +21,9 @@ Congratulations! You have started your first game!
 
 ## Controls
 
-| Up           | W     |
+| Command      | Key   |
 | ------------ | ----- |
+| Up           | W     |
 | Left         | A     |
 | Down         | S     |
 | Right        | D     |
@@ -38,7 +39,9 @@ This game will have 4 types of items dropping off of enemies:
 4. Keys : Currency of the game. Currently useless.
 
 Missile*: Spawns a missile upon requesting one, the missile travels to the middle of the screen and explodes; resulting in dealing 2500 points of damage to every single enemy on-screen.
+
 Food points*: For every 50 food points, You'll be granted a missile.
+
 Extra lives: For every 10k points, you'll be granted an extra life.
 
 
